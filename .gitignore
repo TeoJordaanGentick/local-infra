@@ -1,0 +1,29 @@
+# Secrets
+# .env is built by svc-build-env.sh from the creds directory and never
+# committed. .env.example is tracked — it holds no secrets.
+.env
+*.env
+!.env.example
+
+# NanoMQ password file — GENERATED at bring-up from .env by gen-nanomq-pwd.sh
+# (holds live broker passwords, never committed). Only the .example is tracked.
+nanomq/nanomq_pwd.conf
+!nanomq/nanomq_pwd.conf.example
+
+# Web bundles are populated per-developer by each app's own build (or copied in)
+# and are not part of this infra repo — only the placeholder landing pages are
+# tracked, so the bind-mount targets exist on a fresh clone. Committing a real
+# multi-MB bundle here is deliberate ONLY if you want a standalone box; by
+# default keep it out.
+/nginx/html/**
+!/nginx/html/
+!/nginx/html/*/
+!/nginx/html/*/index.html
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Service data (postgres, questdb, redis, the broker) lives under
+# ${HOST_DATA_ROOT} — outside this repo on purpose. A data directory under a git
+# working tree is one `git clean` away from gone.

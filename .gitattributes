@@ -1,0 +1,27 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Anything executed by a shell or parsed inside a container MUST keep LF in the
+# WORKING TREE too, not just in the repo. `text=auto` alone checks these out
+# with CRLF on Windows, and bash/nanomq/nginx then choke on the carriage
+# return — a clean clone that cannot run its own scripts. The .conf entry covers
+# nanomq.conf and nginx.conf, both parsed inside a container.
+*.sh      text eol=lf
+*.conf    text eol=lf
+*.yml     text eol=lf
+*.sql     text eol=lf
+.env.*    text eol=lf
+
+# Built web bundles (if a dev commits one) ship as tracked binary. git's
+# text/binary sniff decides by a NUL byte in the first 8k, and AssetManifest.bin,
+# CanvasKit .wasm and tree-shaken icon fonts can clear that bar by accident — a
+# single CRLF rewrite then corrupts the bundle in a way only the browser shows.
+# Name them explicitly rather than trusting the sniff.
+*.wasm  binary
+*.bin   binary
+*.otf   binary
+*.ttf   binary
+*.woff  binary
+*.woff2 binary
+*.png   binary
+*.ico   binary

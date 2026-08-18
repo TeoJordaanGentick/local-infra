@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>teo-infra · rms</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 4rem auto;
+           padding: 0 1.25rem; line-height: 1.55; } :root { color-scheme: light dark; }
+    code { background: rgba(128,128,128,.18); padding: .1em .4em; border-radius: 4px; }
+    h1 { font-size: 1.4rem; } .muted { opacity: .7; }
+  </style>
+</head>
+<body>
+  <h1>teo-infra is serving — but the rms bundle is not here yet.</h1>
+  <p>Placeholder from <code>nginx/html/rms/index.html</code>. This vhost answers on
+     <code>http://dev.rms.local/</code>, which needs the optional hosts entry
+     (see the teo-infra README).</p>
+  <p>Drop the rms React build into <code>nginx/html/rms/</code>, add the hosts line,
+     and start rms's private stack so <code>/api/</code> → <code>rms-api:8080</code>
+     answers.</p>
+  <p class="muted">This block is also the template for adding any other app to the
+     shared nginx.</p>
+</body>
+</html>

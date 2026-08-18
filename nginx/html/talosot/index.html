@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>teo-infra · talosot</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 4rem auto;
+           padding: 0 1.25rem; line-height: 1.55; }
+    code { background: rgba(128,128,128,.18); padding: .1em .4em; border-radius: 4px; }
+    h1 { font-size: 1.4rem; } .muted { opacity: .7; }
+  </style>
+</head>
+<body>
+  <h1>teo-infra is serving — but the talosot bundle is not here yet.</h1>
+  <p>This is the placeholder page from <code>nginx/html/talosot/index.html</code>.
+     nginx (shared, from <code>teo-infra</code>) is up and routing
+     <code>localhost</code> to this directory.</p>
+  <p>Drop the talosot Flutter web build into <code>nginx/html/talosot/</code>
+     (it overwrites this file), then reload. The emulator goes in
+     <code>nginx/html/talosot-emulator/</code> and is served at <code>/emu/</code>.</p>
+  <p class="muted">API calls to <code>/api/</code> proxy to <code>talosot-api:8080</code>
+     and the <code>/mqtt</code> WebSocket to <code>mqtt:8083</code> — start talosot's
+     private stack (<code>svc-start.sh --scope private</code>) for those to answer.</p>
+</body>
+</html>
