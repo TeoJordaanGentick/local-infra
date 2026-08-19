@@ -1,4 +1,4 @@
-# Changelog — teo-infra
+# Changelog — local-infra
 
 All notable changes to this repo are recorded here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); this file is the rolling
@@ -15,10 +15,12 @@ unreleased section and is copied to `v<X.Y.Z>.md` at release.
   of colliding on ports 5432/80.
 - `compose.yml` with the five services, container names fixed to the shared
   hostnames apps dial (`postgres`, `mqtt`, `questdb`, `redis`, `nginx`).
-- `nginx/nginx.conf` routing by `server_name`: `localhost` / `dev.talosot.local`
+- `nginx/nginx.conf` routing by `server_name`: `localhost` / `talosot.localhost`
   serve the talosot bundle and proxy `/api`→`talosot-api`, `/mqtt`→`mqtt`;
-  `dev.rms.local` serves the rms bundle and proxies `/api`→`rms-api` (the
-  template for adding another app). `localhost` works with no hosts-file edit.
+  `rms.localhost` serves the rms bundle and proxies `/api`→`rms-api` (the
+  template for adding another app). Per-app `*.localhost` names auto-resolve to
+  `127.0.0.1` in browsers (RFC 6761) — no hosts entry, no DNS server — so a
+  second app is reachable by name with zero per-developer setup.
 - `nanomq/` broker config carrying TalosOT's Sparkplug B account + ACL model,
   with `gen-nanomq-pwd.sh` rendering the password file from `.env` at bring-up.
 - The canonical `svc-*` scripts (copied from `agollum/docker/services/`), a

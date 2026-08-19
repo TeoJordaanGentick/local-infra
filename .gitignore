@@ -10,6 +10,11 @@
 nanomq/nanomq_pwd.conf
 !nanomq/nanomq_pwd.conf.example
 
+# NanoMQ ACL — GENERATED at bring-up from .env by gen-nanomq-acl.sh (usernames
+# substituted into the .example template). Only the .example is tracked.
+nanomq/nanomq_acl.conf
+!nanomq/nanomq_acl.conf.example
+
 # Web bundles are populated per-developer by each app's own build (or copied in)
 # and are not part of this infra repo — only the placeholder landing pages are
 # tracked, so the bind-mount targets exist on a fresh clone. Committing a real
@@ -19,6 +24,12 @@ nanomq/nanomq_pwd.conf
 !/nginx/html/
 !/nginx/html/*/
 !/nginx/html/*/index.html
+# The emulator is served at /emu/ and nginx uses `root .../talosot-emulator`, so
+# its bundle lives one folder deep (talosot-emulator/emu/) — track the nested
+# placeholder too, or a fresh clone 500s on /emu/ (redirect cycle) until a build
+# lands. This matches gentick-infra's layout and the agollum build convention.
+!/nginx/html/*/emu/
+!/nginx/html/*/emu/index.html
 
 # OS
 .DS_Store

@@ -1,0 +1,65 @@
+# ============================================================
+# NanoMQ ACL — TEMPLATE. Rendered to nanomq_acl.conf by gen-nanomq-acl.sh,
+# which substitutes the three @..._USER@ tokens below with the MQTT_USER /
+# MQTT_NODE_USER / MQTT_VIEWER_USER values from .env (themselves from the shared
+# pragma). The generated nanomq_acl.conf is gitignored; only this .example is
+# committed. Do NOT hand-edit the generated file — edit this template.
+#
+# Why generated: the ACL keys on the broker USERNAMES, and so does the password
+# file (nanomq_pwd.conf, likewise generated from the same three .env values). If
+# the ACL hardcoded the names it would silently drift from the pwd file the
+# moment someone changed a username in the pragma — the account would then
+# authenticate but match no rule and hit the default-deny, with no error saying
+# why. Rendering both from one source removes that failure mode.
+#
+# HOCON, NanoMQ 0.24.x schema. Included by nanomq.conf -> auth.acl. Rules are
+# evaluated top-to-bottom, first match wins; anything that matches no rule is
+# denied (auth.no_match = deny, and the trailing catch-all below).
+#
+# Three roles, keyed on the broker username (see nanomq_pwd.conf):
+#
+#   service (@SERVICE_USER@) — api + nexus. Broad pub/sub: they ingest all
+#                       telemetry and issue every DCMD/NCMD on the operator's
+#                       behalf.
+#   node    (@NODE_USER@)    — Talos devices. Publish their own Sparkplug
+#                       telemetry, subscribe only to the commands addressed to
+#                       them.
+#   viewer  (@VIEWER_USER@)  — browsers (the Flutter SPA). Read-only: subscribe
+#                       to the Sparkplug namespace, NEVER publish anywhere. This
+#                       is the A-02 keystone — a compromised SPA session (XSS, a
+#                       leaked token, a reader of localStorage) cannot command a
+#                       plant.
+#
+# NOTE (A-04 / N-03): real node firmware still authenticates as the shared
+# service account today, so the `node` role below is not yet exercised by live
+# devices — it is the target account for the firmware once per-node provisioning
+# lands. Rolling firmware onto it is deliberately out of scope here.
+# ============================================================
+
+rules = [
+	# ── service: api + nexus — full pub/sub on every topic.
+	{"permit": "allow", "username": "@SERVICE_USER@", "action": "pubsub", "topics": ["#"]}
+
+	# ── node: publish own telemetry (BIRTH / DEATH / DATA), node- and
+	#    device-scoped. The second path segment (+) is the Sparkplug group_id.
+	{"permit": "allow", "username": "@NODE_USER@", "action": "publish", "topics": [
+		"spBv1.0/+/NBIRTH/#", "spBv1.0/+/DBIRTH/#",
+		"spBv1.0/+/NDATA/#",  "spBv1.0/+/DDATA/#",
+		"spBv1.0/+/NDEATH/#", "spBv1.0/+/DDEATH/#"
+	]}
+	# ── node: subscribe only to the commands addressed to it, plus primary-host
+	#    STATE (Sparkplug §5.4 — a node watches the host it reports to).
+	{"permit": "allow", "username": "@NODE_USER@", "action": "subscribe", "topics": [
+		"spBv1.0/+/NCMD/#", "spBv1.0/+/DCMD/#", "spBv1.0/+/STATE/#"
+	]}
+
+	# ── viewer: explicit publish denial first (defence in depth — the default
+	#    deny below already blocks it, but this documents intent and survives a
+	#    careless future broad-allow), then the read-only subscription the SPA
+	#    needs for live data.
+	{"permit": "deny",  "username": "@VIEWER_USER@", "action": "publish",   "topics": ["#"]}
+	{"permit": "allow", "username": "@VIEWER_USER@", "action": "subscribe", "topics": ["spBv1.0/#"]}
+
+	# ── default: deny anything not explicitly allowed above.
+	{"permit": "deny"}
+]

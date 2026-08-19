@@ -1,4 +1,4 @@
-# teo-infra — SHARED PUBLIC INFRASTRUCTURE for this local dev box.
+# local-infra — SHARED PUBLIC INFRASTRUCTURE for this local dev box.
 #
 # The leaner, LOCAL equivalent of gentick-infra: it provides the backing
 # services (nginx, postgres, mqtt, questdb, redis) that every app stack on this
@@ -19,7 +19,7 @@
 # ── Why everything lives in THIS compose.yml (no public/ split) ──────────
 #
 # A normal app-infra repo splits compose.yml (always ours) from
-# public/compose.yml (backing services a host MIGHT already provide). teo-infra
+# public/compose.yml (backing services a host MIGHT already provide). local-infra
 # IS the provider of those backing services — nothing else on this box supplies
 # them — so from its own standpoint they are "always ours" and belong in
 # compose.yml, the default `--scope private`. This mirrors gentick-infra, which
@@ -35,14 +35,14 @@
 # Image tags live HERE, never in .env, so the running version is visible in git
 # history rather than in an untracked file.
 
-name: ${PROJECT_NAME:-teo-infra}
+name: ${PROJECT_NAME:-local-infra}
 
 # ── Network ──────────────────────────────────────────────────────────────
 # ONE shared network, declared external here AND in every app stack. Compose
 # refuses to adopt a network it did not create ("has incorrect label
 # com.docker.compose.network"), so no compose file owns it — svc-start.sh
 # creates a plain `backend-net` if it is missing, and every participant merely
-# looks it up. Whoever starts first (usually teo-infra) triggers the create.
+# looks it up. Whoever starts first (usually local-infra) triggers the create.
 networks:
   backend-net:
     external: true
@@ -52,9 +52,9 @@ services:
   # ═══════════════════════════════════════════════════════════════════════
   # nginx — reverse proxy + static host for every app's web bundle.
   #
-  # Routes by server_name (see nginx/nginx.conf): localhost / dev.talosot.local
+  # Routes by server_name (see nginx/nginx.conf): localhost / talosot.localhost
   # serve the talosot bundle and proxy /api → talosot-api, /mqtt → mqtt;
-  # dev.rms.local serves the rms bundle and proxies /api → rms-api. The bundles
+  # rms.localhost serves the rms bundle and proxies /api → rms-api. The bundles
   # are bind-mounted from nginx/html/<app>/ — a dev drops (or builds) each app's
   # web output there. nginx serves them straight from the working tree.
   #

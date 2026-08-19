@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# teo-infra — generate nanomq/nanomq_pwd.conf from .env.
+# local-infra — generate nanomq/nanomq_pwd.conf from .env.
 #
 # NanoMQ has no env templating, so its account passwords cannot be read from the
 # process environment the way api and nexus read theirs. Rather than commit the
