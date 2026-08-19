@@ -120,7 +120,7 @@ services:
     ports:
       - "127.0.0.1:5432:5432" # Secure: reachable only from the host (ssh + a client)
     volumes:
-      - ${HOST_DATA_ROOT}/postgres:/var/lib/postgresql/data
+      - ${HOST_DATA_ROOT}/postgres/data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 60s

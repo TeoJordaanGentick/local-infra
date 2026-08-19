@@ -202,7 +202,9 @@ no backing-service dependencies yet, so there is nothing to wire until
 - **Host level.** Everything persistent is under `${HOST_DATA_ROOT}` (default
   `/srv/data`), set per-machine in `.env` — it is the one value that genuinely
   varies per host:
-  `postgres/`, `questdb/`, `redis/`, `mqtt-broker/`. This is **outside the repo
+  `postgres/data/`, `questdb/`, `redis/`, `mqtt-broker/` (postgres nests its
+  cluster under `postgres/data/` so the `postgres/` parent stays free for
+  backups/dumps without fouling the strict-perms data dir). This is **outside the repo
   on purpose** — a data directory under a git working tree is one `git clean`
   from gone. Because it is the same root the app stacks use, local-infra serves the
   **same** cluster/data the standalone stacks did.
