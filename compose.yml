@@ -195,21 +195,19 @@ services:
 
 # ------------------ Networks -------------------
 #
-# `name:` pins it to `backend-net` rather than `local-infra_backend-net` (compose
-# would otherwise prefix the project name, and every app stack joining it would
-# have to hardcode that prefix).
+# `name:` is what makes this network `backend-net` rather than
+# `local-infra_backend-net`. Without it compose prefixes the project name, and
+# every app stack that joins this network has to hardcode that prefix.
 #
-# `external: true` — local-infra JOINS this network, it does not own it. On this
-# dev box `backend-net` is a SHARED network that app stacks (saamsaam, talosot,
-# rms) are already attached to; it lives outside any single compose project and
-# everyone looks it up. This deliberately differs from gentick-infra, which OWNS
-# the network because on the server it is the sole creator on a clean boot.
-# Owning it here would (a) refuse to adopt the pre-existing unlabelled network
-# ("has incorrect label com.docker.compose.network"), and (b) let a
-# `docker compose down` here remove the network out from under the running app
-# stacks. Create it once if it does not exist yet:
-#   docker network create backend-net
+# local-infra OWNS this network: it is declared here without `external:`, so
+# compose creates it. The app stacks (talosot-edge-infra, rms-infra) declare it
+# `external: true` and only look it up.
+#
+# Bring local-infra up FIRST on a fresh box. If a plainly-created `backend-net`
+# already exists (e.g. from an older svc-start.sh run), compose refuses it with
+# "network backend-net was found but has incorrect label
+# com.docker.compose.network" — the fix is to stop the app stacks,
+# `docker network rm backend-net`, and start local-infra first.
 networks:
   backend-net:
-    external: true
     name: backend-net
