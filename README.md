@@ -53,23 +53,19 @@ The contract every infra repo keeps: **build `.env`, bring it up, done.**
 cd /c/dev/local-infra           # (WSL: /mnt/c/dev/local-infra — docker lives in WSL)
 
 ./svc-build-env.sh            # 1. build .env from .env.example + the pragma creds
-./boot.sh                     # 2. render the broker password file, then start
+./svc-start.sh                # 2. render the broker config, then bring the stack up
 ```
 
-`boot.sh` does three steps in order: `gen-nanomq-pwd.sh` (renders
-`nanomq/nanomq_pwd.conf` from `.env` — NanoMQ has no env templating),
-`gen-nanomq-acl.sh` (renders `nanomq/nanomq_acl.conf` from the same `.env`
-usernames, so the ACL and the pwd file can never drift), then `svc-start.sh`.
-To do it by hand:
+`svc-start.sh` first runs `svc-gen-nanomq.sh` — NanoMQ has no env templating, so
+its password file (`nanomq/nanomq_pwd.conf`) and ACL (`nanomq/nanomq_acl.conf`)
+are rendered from the same `.env` values the app clients dial with. Both are
+gitignored and absent on a fresh clone; generating them **before** the broker
+starts is what stops docker bind-mounting an empty directory in their place (the
+broker then crash-loops with `input in flex scanner failed`). `svc-start.sh` then
+brings the stack up, `--scope private` by default (the whole provider stack).
 
-```bash
-./gen-nanomq-pwd.sh
-./gen-nanomq-acl.sh
-./svc-start.sh                # scope defaults to `private` = the whole provider stack
-```
-
-Docker runs inside WSL on this box, so from a Windows shell wrap commands:
-`wsl -e bash -lc 'cd /mnt/c/dev/local-infra && ./boot.sh'`.
+Docker runs inside WSL on this box, so run it there:
+`wsl -e bash -lc 'cd /srv/local-infra && ./svc-start.sh'`.
 
 Check it: `curl -s http://localhost/healthz` → `ok`, and
 `docker ps` shows `nginx postgres mqtt questdb redis` healthy.
@@ -263,9 +259,7 @@ set fails like a bug in the file you didn't touch).
 | `svc-update.sh` | Pull images and recreate |
 | `svc-image-purge.sh` | Remove images from the local cache (prompts — it destroys) |
 | `svc-compose.sh` | Shared helpers, sourced by the others |
-| `gen-nanomq-pwd.sh` | Render `nanomq/nanomq_pwd.conf` from `.env` (local-infra-specific) |
-| `gen-nanomq-acl.sh` | Render `nanomq/nanomq_acl.conf` from `.env` usernames (local-infra-specific) |
-| `boot.sh` | Convenience: `gen-nanomq-pwd.sh`, `gen-nanomq-acl.sh`, then `svc-start.sh` |
+| `svc-gen-nanomq.sh` | Render `nanomq_pwd.conf` + `nanomq_acl.conf` from `.env`; run automatically by `svc-start.sh` |
 
 **Scope note.** local-infra has only `compose.yml`, so use the default
 `--scope private` (or no flag). `--scope public`/`--scope all` have no file to
@@ -281,10 +275,8 @@ local-infra/
   compose.yml                 the five shared services
   .env.example                committed template (replace- = secret); .env gitignored
   .gitignore  .gitattributes
-  boot.sh                     gen pwd + acl files, then svc-start
-  gen-nanomq-pwd.sh           render nanomq_pwd.conf from .env
-  gen-nanomq-acl.sh           render nanomq_acl.conf from .env usernames
   svc-*.sh                    canonical service scripts (from agollum)
+  svc-gen-nanomq.sh           render nanomq pwd + acl from .env (called by svc-start)
   nginx/
     nginx.conf                server_name routing (talosot default + rms template)
     html/<app>/index.html     bind-mount targets; placeholders until a build lands

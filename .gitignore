@@ -5,12 +5,12 @@
 *.env
 !.env.example
 
-# NanoMQ password file — GENERATED at bring-up from .env by gen-nanomq-pwd.sh
+# NanoMQ password file — GENERATED at bring-up from .env by svc-gen-nanomq.sh
 # (holds live broker passwords, never committed). Only the .example is tracked.
 nanomq/nanomq_pwd.conf
 !nanomq/nanomq_pwd.conf.example
 
-# NanoMQ ACL — GENERATED at bring-up from .env by gen-nanomq-acl.sh (usernames
+# NanoMQ ACL — GENERATED at bring-up from .env by svc-gen-nanomq.sh (usernames
 # substituted into the .example template). Only the .example is tracked.
 nanomq/nanomq_acl.conf
 !nanomq/nanomq_acl.conf.example
