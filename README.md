@@ -241,17 +241,18 @@ container on the box).
 
 ## Ordering and the network
 
-**local-infra OWNS `backend-net`** — its `networks:` block declares it without
-`external:`, so `docker compose up` creates it (properly labelled), exactly as
-`gentick-infra` does on the server. Every app stack declares it `external: true`
-and only looks it up. Bring **local-infra up first** on a fresh box, then start
-each app's private stack.
+**local-infra JOINS `backend-net`; it does not own it** — declared `external: true`
+here, like every app stack. On this box `backend-net` is a shared network that
+app stacks (saamsaam, talosot, rms) are already attached to, created outside any
+single compose project. This differs from `gentick-infra`, which *owns* the
+network because on the server it is the sole creator on a clean boot; here, owning
+it would refuse to adopt the pre-existing unlabelled network ("has incorrect
+label com.docker.compose.network") and would let a `docker compose down` remove it
+out from under the running app stacks. Create it once if it is missing:
 
-If you ever see `network backend-net ... has incorrect label
-com.docker.compose.network`, a plain (unlabelled) `backend-net` already exists —
-usually left by an older `svc-start.sh` run or by an app stack that wrongly tried
-to own it. Fix: stop the stacks, `docker network rm backend-net`, then start
-local-infra first so it re-creates the network with compose's labels.
+```bash
+docker network create backend-net
+```
 
 ---
 

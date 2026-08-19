@@ -13,9 +13,10 @@ unreleased section and is copied to `v<X.Y.Z>.md` at release.
   over one shared `backend-net`, so each app (talosot, rms, safaura, …) can run
   its own PRIVATE stack alongside instead of colliding on ports 5432/80.
 - `compose.yml` with the five services. Following `gentick-infra`'s convention,
-  container names and ports are hardcoded here (not in `.env`), and local-infra
-  OWNS `backend-net` (declared without `external:`), which the app stacks join as
-  `external`. Host ports are bound to loopback, except nginx (all interfaces, so
+  container names and ports are hardcoded here (not in `.env`). `backend-net` is
+  declared `external: true` — local-infra joins the shared network the app stacks
+  already use rather than owning it (unlike gentick-infra, the sole creator on the
+  server). Host ports are bound to loopback, except nginx (all interfaces, so
   `localhost` works).
 - `nginx/nginx.conf` routing by `server_name`: `localhost` / `talosot.localhost`
   serve the talosot bundle and proxy `/api`→`talosot-api`, `/mqtt`→`mqtt`;
