@@ -1,5 +1,5 @@
 # ============================================================
-# NanoMQ ACL — TEMPLATE. Rendered to nanomq_acl.conf by gen-nanomq-acl.sh,
+# NanoMQ ACL — TEMPLATE. Rendered to nanomq_acl.conf by svc-gen-nanomq.sh,
 # which substitutes the three @..._USER@ tokens below with the MQTT_USER /
 # MQTT_NODE_USER / MQTT_VIEWER_USER values from .env (themselves from the shared
 # pragma). The generated nanomq_acl.conf is gitignored; only this .example is
@@ -25,15 +25,14 @@
 #                       telemetry, subscribe only to the commands addressed to
 #                       them.
 #   viewer  (@VIEWER_USER@)  — browsers (the Flutter SPA). Read-only: subscribe
-#                       to the Sparkplug namespace, NEVER publish anywhere. This
-#                       is the A-02 keystone — a compromised SPA session (XSS, a
-#                       leaked token, a reader of localStorage) cannot command a
-#                       plant.
+#                       to the Sparkplug namespace, NEVER publish anywhere. A
+#                       compromised SPA session (XSS, a leaked token, a reader of
+#                       localStorage) cannot command a plant.
 #
-# NOTE (A-04 / N-03): real node firmware still authenticates as the shared
-# service account today, so the `node` role below is not yet exercised by live
-# devices — it is the target account for the firmware once per-node provisioning
-# lands. Rolling firmware onto it is deliberately out of scope here.
+# NOTE: real node firmware still authenticates as the shared service account
+# today, so the `node` role below is not yet exercised by live devices — it is
+# the target account for the firmware once per-node provisioning lands. Rolling
+# firmware onto it is deliberately out of scope here.
 # ============================================================
 
 rules = [

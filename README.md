@@ -23,9 +23,10 @@ run its own PRIVATE stack alongside it instead of every app bringing up its own
 
 All five live in `compose.yml` and come up together. There is **no `public/`
 split** here: local-infra *is* the provider, so from its own standpoint every
-service is "always ours" and belongs in the default `--scope private` file.
-(A normal app-infra repo splits `compose.yml` from `public/compose.yml`;
-local-infra, like `gentick-infra`, is a pure provider with one compose file.)
+service is "always ours" and belongs in the single `compose.yml`. (A normal
+app-infra repo splits `compose.yml` from `public/compose.yml`; local-infra, like
+`gentick-infra`, is a pure provider with one compose file, brought up with
+`docker compose` directly.)
 
 | Service | Image | Reached by apps as | Host port (loopback unless noted) |
 |---|---|---|---|
@@ -53,22 +54,27 @@ The contract every infra repo keeps: **build `.env`, bring it up, done.**
 cd /c/dev/local-infra           # (WSL: /mnt/c/dev/local-infra — docker lives in WSL)
 
 ./svc-build-env.sh            # 1. build .env from .env.example + the pragma creds
-./svc-start.sh                # 2. render the broker config, then bring the stack up
+./svc-gen-nanomq.sh           # 2. render the broker password + ACL files from .env
+docker compose up -d          # 3. bring the stack up
 ```
 
-`svc-start.sh` first runs `svc-gen-nanomq.sh` — NanoMQ has no env templating, so
-its password file (`nanomq/nanomq_pwd.conf`) and ACL (`nanomq/nanomq_acl.conf`)
-are rendered from the same `.env` values the app clients dial with. Both are
-gitignored and absent on a fresh clone; generating them **before** the broker
-starts is what stops docker bind-mounting an empty directory in their place (the
-broker then crash-loops with `input in flex scanner failed`). `svc-start.sh` then
-brings the stack up, `--scope private` by default (the whole provider stack).
+NanoMQ has no env templating, so its password file (`nanomq/nanomq_pwd.conf`) and
+ACL (`nanomq/nanomq_acl.conf`) are rendered from the same `.env` values the app
+clients dial with. Both are gitignored and absent on a fresh clone; generating
+them **before** the broker starts is what stops docker bind-mounting an empty
+directory in their place (the broker then crash-loops with `input in flex scanner
+failed`). Always run `svc-gen-nanomq.sh` before `docker compose up`.
 
 Docker runs inside WSL on this box, so run it there:
-`wsl -e bash -lc 'cd /srv/local-infra && ./svc-start.sh'`.
+`wsl -e bash -lc 'cd /srv/local-infra && ./svc-build-env.sh && ./svc-gen-nanomq.sh && docker compose up -d'`.
 
 Check it: `curl -s http://localhost/healthz` → `ok`, and
 `docker ps` shows `nginx postgres mqtt questdb redis` healthy.
+
+> Like `gentick-infra`, this repo carries only `svc-build-env.sh` and
+> `svc-gen-nanomq.sh` — no `svc-start.sh` or scope machinery. It is a pure
+> provider with a single `compose.yml`, started and stopped with `docker compose`
+> directly.
 
 ---
 
@@ -126,7 +132,7 @@ services and its app services together —
 
 1. Bring up the shared services **first**:
    ```bash
-   cd /c/dev/local-infra && ./boot.sh
+   cd /c/dev/local-infra && ./svc-build-env.sh && ./svc-gen-nanomq.sh && docker compose up -d
    ```
 2. Put the talosot web bundle where local-infra's nginx serves it — build it into
    `local-infra/nginx/html/talosot/` (and the emulator into
@@ -233,38 +239,36 @@ container on the box).
 
 ## Ordering and the network
 
-`backend-net` is declared `external: true` here **and** in every app stack —
-nobody owns it in a compose file. `svc-start.sh` creates a plain `backend-net`
-if it is missing, and everyone else looks it up. Bring **local-infra up first** on
-a fresh box so it triggers the create; then start each app's private stack.
+**local-infra OWNS `backend-net`** — its `networks:` block declares it without
+`external:`, so `docker compose up` creates it (properly labelled), exactly as
+`gentick-infra` does on the server. Every app stack declares it `external: true`
+and only looks it up. Bring **local-infra up first** on a fresh box, then start
+each app's private stack.
 
 If you ever see `network backend-net ... has incorrect label
-com.docker.compose.network`, an app stack that (wrongly) tried to *own* the
-network created a mislabelled one. Fix: stop the stacks, `docker network rm
-backend-net`, start local-infra first.
+com.docker.compose.network`, a plain (unlabelled) `backend-net` already exists —
+usually left by an older `svc-start.sh` run or by an app stack that wrongly tried
+to own it. Fix: stop the stacks, `docker network rm backend-net`, then start
+local-infra first so it re-creates the network with compose's labels.
 
 ---
 
 ## The service scripts
 
-Canonical copies from `agollum/docker/services/` — edit them there and copy the
-whole set across, never hand-edit one (they source each other; a half-updated
-set fails like a bug in the file you didn't touch).
+Canonical copies from `agollum/docker/services/` — edit them there and copy
+across, never hand-edit one. This repo carries only the two a pure provider
+needs; start and stop the stack with `docker compose` directly.
 
 | Script | Does |
 |---|---|
 | `svc-build-env.sh` | Build `.env` from `.env.example` + the pragma creds |
-| `svc-start.sh` | Bring services up and wait for health (`--scope private` default) |
-| `svc-stop.sh` | Bring them down |
-| `svc-update.sh` | Pull images and recreate |
-| `svc-image-purge.sh` | Remove images from the local cache (prompts — it destroys) |
-| `svc-compose.sh` | Shared helpers, sourced by the others |
-| `svc-gen-nanomq.sh` | Render `nanomq_pwd.conf` + `nanomq_acl.conf` from `.env`; run automatically by `svc-start.sh` |
+| `svc-gen-nanomq.sh` | Render `nanomq_pwd.conf` + `nanomq_acl.conf` from `.env` — run it before `docker compose up` |
 
-**Scope note.** local-infra has only `compose.yml`, so use the default
-`--scope private` (or no flag). `--scope public`/`--scope all` have no file to
-select here and will error — there is nothing "public vs private" to split when
-the repo *is* the public provider.
+The `--scope`-aware scripts (`svc-start.sh`, `svc-stop.sh`, …) are deliberately
+absent: they exist to select between `compose.yml` and `public/compose.yml`, and
+local-infra has no such split — it *is* the public provider, so `--scope private`
+would name the whole stack and `--scope public` would name nothing. This mirrors
+`gentick-infra`, which carries the same two scripts and nothing else.
 
 ---
 
@@ -275,8 +279,8 @@ local-infra/
   compose.yml                 the five shared services
   .env.example                committed template (replace- = secret); .env gitignored
   .gitignore  .gitattributes
-  svc-*.sh                    canonical service scripts (from agollum)
-  svc-gen-nanomq.sh           render nanomq pwd + acl from .env (called by svc-start)
+  svc-build-env.sh            build .env from .env.example + pragma creds
+  svc-gen-nanomq.sh           render nanomq pwd + acl from .env (run before compose up)
   nginx/
     nginx.conf                server_name routing (talosot default + rms template)
     html/<app>/index.html     bind-mount targets; placeholders until a build lands

@@ -1,10 +1,10 @@
 # EXAMPLE NanoMQ password file — placeholders only, safe to commit.
 #
-# The REAL file, public/nanomq/nanomq_pwd.conf, is GENERATED at deploy/boot time
-# by ../../gen-nanomq-pwd.sh from the MQTT_*_USER / MQTT_*_PASSWORD values in
-# .env, and is gitignored (A-04 — no broker password in git history). This
-# example only documents the shape NanoMQ expects: HOCON "username: password"
-# pairs, included by nanomq.conf -> auth.password, one per role.
+# The REAL file, nanomq/nanomq_pwd.conf, is GENERATED at bring-up by
+# svc-gen-nanomq.sh from the MQTT_*_USER / MQTT_*_PASSWORD values in .env, and is
+# gitignored (no broker password in git history). This example only documents the
+# shape NanoMQ expects: HOCON "username: password" pairs, included by nanomq.conf
+# -> auth.password, one per role.
 #
 #   service (api, nexus) — MQTT_USER        / MQTT_PASSWORD
 #   node    (devices)    — MQTT_NODE_USER   / MQTT_NODE_PASSWORD
@@ -12,7 +12,7 @@
 #
 # Roles and ACL rules live in nanomq_acl.conf. To (re)generate the real file:
 #
-#   ./gen-nanomq-pwd.sh
-talosot: replace-me
+#   ./svc-gen-nanomq.sh
+service: replace-me
 node: replace-me
 viewer: replace-me
