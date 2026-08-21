@@ -98,16 +98,17 @@ services:
       - ./nanomq/nanomq_pwd.conf:/etc/nanomq_pwd.conf:ro
       - ./nanomq/nanomq_acl.conf:/etc/nanomq_acl.conf:ro
       - ${HOST_DATA_ROOT}/mqtt-broker:/mqtt-broker
-    # A real authenticated MQTT publish: connect, one QoS1 message, clean
-    # disconnect. NanoMQ reclaims the socket the normal way, so — unlike the old
-    # bare /dev/tcp open — it does NOT leak. It also verifies more than "port
-    # open": that the broker still ACCEPTS + AUTHENTICATES + ACKs a session,
-    # which is exactly the accept-wedge the old probe reported healthy through.
-    # QoS1 makes the probe wait for a PUBACK. Topic is outside spBv1.0/ so no
-    # subscriber consumes it. docker's own `timeout` fails the check if the
-    # broker is wedged. (Verify on a fresh broker that a bad cred -> unhealthy.)
+    # A real authenticated MQTT connect+publish, unlike the old bare /dev/tcp
+    # open that leaked (nanomq 0.24.13 never close()s a socket that never sent
+    # CONNECT). This proves the broker ACCEPTS + AUTHENTICATES a session — the
+    # accept-wedge the old probe reported healthy right through — and closes
+    # cleanly, so it does not leak. NOTE nanomq_cli's exit code is unreliable
+    # (it returns 1 even on a successful connect + clean disconnect), so health
+    # is keyed on the CONNACK success line "connect result: 0" instead. A wedged
+    # broker or a bad cred never prints it; docker's `timeout` fails the check if
+    # the connect hangs. Topic is outside spBv1.0/ so nothing consumes it.
     healthcheck:
-      test: ["CMD-SHELL", "nanomq_cli pub -h 127.0.0.1 -p 1883 -u \"$$MQTT_USER\" -P \"$$MQTT_PASSWORD\" -t healthcheck -m ok -q 1 -L 1 >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "nanomq_cli pub -h 127.0.0.1 -p 1883 -u \"$$MQTT_USER\" -P \"$$MQTT_PASSWORD\" -t healthcheck -m ok -q 1 -L 1 -v 2>&1 | grep -q 'connect result: 0'"]
       interval: 30s
       timeout: 5s
       retries: 3
