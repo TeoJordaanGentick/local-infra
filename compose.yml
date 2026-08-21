@@ -71,9 +71,19 @@ services:
     command: ["--conf", "/etc/nanomq.conf"]
     environment:
       TZ: ${TZ}
-    # The container default of 1024 fds is low for a broker and is what turned a
-    # slow leak into an outage on the server. Raise the ceiling; it does not fix a
-    # leak, so a rising fd count is still a bug.
+      # Consumed ONLY by the healthcheck below. The broker runs
+      # auth.no_match=deny, so a health probe must authenticate — these are the
+      # shared service-account creds from .env (service has pub/sub on #).
+      MQTT_USER: ${MQTT_USER}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+    # Defence in depth: the container default of 1024 fds is low for a broker.
+    # The server's 2026-08-12 and 2026-08-21 wedges were driven by the OLD
+    # /dev/tcp healthcheck — a bare TCP open that never sent an MQTT CONNECT.
+    # NanoMQ 0.24.13 never close()s such a half-open socket, so it leaked one fd
+    # into CLOSE_WAIT every interval until accept() stopped (dark broker, process
+    # still "up"). The healthcheck below is now a real, cleanly-closed MQTT
+    # session and no longer leaks; this raised ceiling stays as a backstop, so a
+    # still-rising fd count remains a bug worth chasing.
     ulimits:
       nofile:
         soft: 8192
@@ -88,8 +98,16 @@ services:
       - ./nanomq/nanomq_pwd.conf:/etc/nanomq_pwd.conf:ro
       - ./nanomq/nanomq_acl.conf:/etc/nanomq_acl.conf:ro
       - ${HOST_DATA_ROOT}/mqtt-broker:/mqtt-broker
+    # A real authenticated MQTT publish: connect, one QoS1 message, clean
+    # disconnect. NanoMQ reclaims the socket the normal way, so — unlike the old
+    # bare /dev/tcp open — it does NOT leak. It also verifies more than "port
+    # open": that the broker still ACCEPTS + AUTHENTICATES + ACKs a session,
+    # which is exactly the accept-wedge the old probe reported healthy through.
+    # QoS1 makes the probe wait for a PUBACK. Topic is outside spBv1.0/ so no
+    # subscriber consumes it. docker's own `timeout` fails the check if the
+    # broker is wedged. (Verify on a fresh broker that a bad cred -> unhealthy.)
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/1883' >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "nanomq_cli pub -h 127.0.0.1 -p 1883 -u \"$$MQTT_USER\" -P \"$$MQTT_PASSWORD\" -t healthcheck -m ok -q 1 -L 1 >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
