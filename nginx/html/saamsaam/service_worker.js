@@ -124,6 +124,20 @@ self.addEventListener('fetch', (event) => {
         if (shell) return shell;
         try {
           const fresh = await fetch(req);
+          // Self-heal the shell. The precache is the ONLY other path that stores
+          // index.html, and it runs solely on SW (re)install. So when PURGE_SHELL
+          // (an "apply update") empties the cache while THIS file is unchanged —
+          // e.g. only the Dart bundle changed — the browser does not reinstall the
+          // SW, install never re-runs, and index.html is never restored: the cache
+          // then holds every hashed asset (filled cache-first below) but not the
+          // shell, and the next offline open falls through to the 503 below. The
+          // navigate handler is the one path that always sees index.html online, so
+          // it must be the one that puts it back. Same-origin 200s only; a failed
+          // cache write must never break serving the live response.
+          if (fresh && fresh.status === 200 && fresh.type === 'basic') {
+            cache.put(new URL('index.html', self.registration.scope), fresh.clone())
+              .catch(() => {});
+          }
           return fresh;
         } catch (_) {
           // Last resort if index.html was never cached.
