@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "exercises": [
     {
       "id": 1,
@@ -276,7 +276,7 @@
       "name": "Push-up",
       "normalized_name": "pushup",
       "uses_reps": true,
-      "uses_weight": false,
+      "uses_weight": true,
       "uses_distance": false,
       "uses_time": false
     },
@@ -285,7 +285,7 @@
       "name": "Crunch",
       "normalized_name": "crunch",
       "uses_reps": true,
-      "uses_weight": false,
+      "uses_weight": true,
       "uses_distance": false,
       "uses_time": false
     },
@@ -294,7 +294,7 @@
       "name": "Sit-up",
       "normalized_name": "situp",
       "uses_reps": true,
-      "uses_weight": false,
+      "uses_weight": true,
       "uses_distance": false,
       "uses_time": false
     },
@@ -303,7 +303,7 @@
       "name": "Hanging Leg Raise",
       "normalized_name": "hanginglegraise",
       "uses_reps": true,
-      "uses_weight": false,
+      "uses_weight": true,
       "uses_distance": false,
       "uses_time": false
     },
@@ -312,7 +312,7 @@
       "name": "Bodyweight Lunge",
       "normalized_name": "bodyweightlunge",
       "uses_reps": true,
-      "uses_weight": false,
+      "uses_weight": true,
       "uses_distance": false,
       "uses_time": false
     },
@@ -321,7 +321,7 @@
       "name": "Air Squat",
       "normalized_name": "airsquat",
       "uses_reps": true,
-      "uses_weight": false,
+      "uses_weight": true,
       "uses_distance": false,
       "uses_time": false
     },
