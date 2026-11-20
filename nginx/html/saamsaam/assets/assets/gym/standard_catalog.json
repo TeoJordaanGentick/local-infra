@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "exercises": [
     {
       "id": 1,
@@ -237,7 +237,7 @@
       "name": "Pull-up",
       "normalized_name": "pullup",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
@@ -247,7 +247,7 @@
       "name": "Chin-up",
       "normalized_name": "chinup",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
@@ -257,7 +257,7 @@
       "name": "Dip",
       "normalized_name": "dip",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
@@ -307,7 +307,7 @@
       "name": "Push-up",
       "normalized_name": "pushup",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
@@ -317,7 +317,7 @@
       "name": "Crunch",
       "normalized_name": "crunch",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
@@ -327,7 +327,7 @@
       "name": "Sit-up",
       "normalized_name": "situp",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
@@ -337,7 +337,7 @@
       "name": "Hanging Leg Raise",
       "normalized_name": "hanginglegraise",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
@@ -347,7 +347,7 @@
       "name": "Lunge",
       "normalized_name": "lunge",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
@@ -357,7 +357,7 @@
       "name": "Air Squat",
       "normalized_name": "airsquat",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
@@ -650,6 +650,16 @@
       "uses_weight": false,
       "uses_distance": true,
       "uses_time": true
+    },
+    {
+      "id": 66,
+      "type": "body",
+      "name": "Body weight",
+      "normalized_name": "bodyweight",
+      "uses_reps": false,
+      "uses_weight": true,
+      "uses_distance": false,
+      "uses_time": false
     }
   ]
 }
