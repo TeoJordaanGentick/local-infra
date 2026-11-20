@@ -134491,7 +134491,7 @@ if(l===$){s=m.c.eb()
 r=m.d
 if(r==null||r.length===0)r="unknown"
 q=m.a
-q=A.c(["SaamSaam error report","Version: 0.0.1-staging","Build: 7dec4c9","Time (UTC): "+s,"Route: "+r,"Error type: "+J.al(q).k(0),"Message: "+A.c3V(q)],t.s)
+q=A.c(["SaamSaam error report","Version: 0.0.0","Build: 617ead4","Time (UTC): "+s,"Route: "+r,"Error type: "+J.al(q).k(0),"Message: "+A.c3V(q)],t.s)
 p=m.gbiF(0)
 if(p!=null){s=p.length!==0
 o=p}else{o=null
@@ -165482,7 +165482,7 @@ C(a){var s,r=null,q=this.gaz().ak($.axT(),t.y)?r:new A.bBP(this),p=A.B(a).ok.Q
 if(p==null)p=r
 else{s=A.B(a).ax.k3
 s=p.aU(A.aD(100,s.v()>>>16&255,s.v()>>>8&255,s.v()&255))
-p=s}return A.kH(r,A.J("v0.0.1-staging",r,r,r,r,r,p,r,r,r),B.D,!1,B.ans,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,q,r,r,r,r,r,r)}}
+p=s}return A.kH(r,A.J("v0.0.0",r,r,r,r,r,p,r,r,r),B.D,!1,B.ans,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,q,r,r,r,r,r,r)}}
 A.bBP.prototype={
 $0(){var s=this.a
 if(++s.w>=5){s.w=0
