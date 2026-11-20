@@ -1,8 +1,9 @@
 {
-  "version": 2,
+  "version": 4,
   "exercises": [
     {
       "id": 1,
+      "type": "weights",
       "name": "Back Squat",
       "normalized_name": "backsquat",
       "uses_reps": true,
@@ -12,6 +13,7 @@
     },
     {
       "id": 2,
+      "type": "weights",
       "name": "Front Squat",
       "normalized_name": "frontsquat",
       "uses_reps": true,
@@ -21,6 +23,7 @@
     },
     {
       "id": 3,
+      "type": "weights",
       "name": "Conventional Deadlift",
       "normalized_name": "conventionaldeadlift",
       "uses_reps": true,
@@ -30,6 +33,7 @@
     },
     {
       "id": 4,
+      "type": "weights",
       "name": "Romanian Deadlift",
       "normalized_name": "romaniandeadlift",
       "uses_reps": true,
@@ -39,6 +43,7 @@
     },
     {
       "id": 5,
+      "type": "weights",
       "name": "Barbell Bench Press",
       "normalized_name": "barbellbenchpress",
       "uses_reps": true,
@@ -48,6 +53,7 @@
     },
     {
       "id": 6,
+      "type": "weights",
       "name": "Incline Barbell Bench Press",
       "normalized_name": "inclinebarbellbenchpress",
       "uses_reps": true,
@@ -57,6 +63,7 @@
     },
     {
       "id": 7,
+      "type": "weights",
       "name": "Overhead Press",
       "normalized_name": "overheadpress",
       "uses_reps": true,
@@ -66,6 +73,7 @@
     },
     {
       "id": 8,
+      "type": "weights",
       "name": "Barbell Row",
       "normalized_name": "barbellrow",
       "uses_reps": true,
@@ -75,6 +83,7 @@
     },
     {
       "id": 9,
+      "type": "weights",
       "name": "Pendlay Row",
       "normalized_name": "pendlayrow",
       "uses_reps": true,
@@ -84,6 +93,7 @@
     },
     {
       "id": 10,
+      "type": "weights",
       "name": "Barbell Curl",
       "normalized_name": "barbellcurl",
       "uses_reps": true,
@@ -93,6 +103,7 @@
     },
     {
       "id": 11,
+      "type": "weights",
       "name": "Close-Grip Bench Press",
       "normalized_name": "closegripbenchpress",
       "uses_reps": true,
@@ -102,6 +113,7 @@
     },
     {
       "id": 12,
+      "type": "weights",
       "name": "Barbell Hip Thrust",
       "normalized_name": "barbellhipthrust",
       "uses_reps": true,
@@ -111,6 +123,7 @@
     },
     {
       "id": 13,
+      "type": "weights",
       "name": "Leg Press",
       "normalized_name": "legpress",
       "uses_reps": true,
@@ -120,6 +133,7 @@
     },
     {
       "id": 14,
+      "type": "weights",
       "name": "Lat Pulldown",
       "normalized_name": "latpulldown",
       "uses_reps": true,
@@ -129,6 +143,7 @@
     },
     {
       "id": 15,
+      "type": "weights",
       "name": "Seated Cable Row",
       "normalized_name": "seatedcablerow",
       "uses_reps": true,
@@ -138,6 +153,7 @@
     },
     {
       "id": 16,
+      "type": "weights",
       "name": "Dumbbell Curl",
       "normalized_name": "dumbbellcurl",
       "uses_reps": true,
@@ -147,6 +163,7 @@
     },
     {
       "id": 17,
+      "type": "weights",
       "name": "Dumbbell Shoulder Press",
       "normalized_name": "dumbbellshoulderpress",
       "uses_reps": true,
@@ -156,6 +173,7 @@
     },
     {
       "id": 18,
+      "type": "weights",
       "name": "Dumbbell Bench Press",
       "normalized_name": "dumbbellbenchpress",
       "uses_reps": true,
@@ -165,6 +183,7 @@
     },
     {
       "id": 19,
+      "type": "weights",
       "name": "Dumbbell Lateral Raise",
       "normalized_name": "dumbbelllateralraise",
       "uses_reps": true,
@@ -174,6 +193,7 @@
     },
     {
       "id": 20,
+      "type": "weights",
       "name": "Leg Extension",
       "normalized_name": "legextension",
       "uses_reps": true,
@@ -183,6 +203,7 @@
     },
     {
       "id": 21,
+      "type": "weights",
       "name": "Lying Leg Curl",
       "normalized_name": "lyinglegcurl",
       "uses_reps": true,
@@ -192,6 +213,7 @@
     },
     {
       "id": 22,
+      "type": "weights",
       "name": "Standing Calf Raise",
       "normalized_name": "standingcalfraise",
       "uses_reps": true,
@@ -201,6 +223,7 @@
     },
     {
       "id": 23,
+      "type": "weights",
       "name": "Triceps Pushdown",
       "normalized_name": "tricepspushdown",
       "uses_reps": true,
@@ -210,33 +233,37 @@
     },
     {
       "id": 24,
+      "type": "bodyweight",
       "name": "Pull-up",
       "normalized_name": "pullup",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
     {
       "id": 25,
+      "type": "bodyweight",
       "name": "Chin-up",
       "normalized_name": "chinup",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
     {
       "id": 26,
+      "type": "bodyweight",
       "name": "Dip",
       "normalized_name": "dip",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
     {
       "id": 27,
+      "type": "weights",
       "name": "Goblet Squat",
       "normalized_name": "gobletsquat",
       "uses_reps": true,
@@ -246,6 +273,7 @@
     },
     {
       "id": 28,
+      "type": "weights",
       "name": "Bulgarian Split Squat",
       "normalized_name": "bulgariansplitsquat",
       "uses_reps": true,
@@ -255,6 +283,7 @@
     },
     {
       "id": 29,
+      "type": "weights",
       "name": "Face Pull",
       "normalized_name": "facepull",
       "uses_reps": true,
@@ -264,6 +293,7 @@
     },
     {
       "id": 30,
+      "type": "weights",
       "name": "Hammer Curl",
       "normalized_name": "hammercurl",
       "uses_reps": true,
@@ -273,62 +303,69 @@
     },
     {
       "id": 31,
+      "type": "bodyweight",
       "name": "Push-up",
       "normalized_name": "pushup",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
     {
       "id": 32,
+      "type": "bodyweight",
       "name": "Crunch",
       "normalized_name": "crunch",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
     {
       "id": 33,
+      "type": "bodyweight",
       "name": "Sit-up",
       "normalized_name": "situp",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
     {
       "id": 34,
+      "type": "bodyweight",
       "name": "Hanging Leg Raise",
       "normalized_name": "hanginglegraise",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
     {
       "id": 35,
-      "name": "Bodyweight Lunge",
-      "normalized_name": "bodyweightlunge",
+      "type": "bodyweight",
+      "name": "Lunge",
+      "normalized_name": "lunge",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
     {
       "id": 36,
+      "type": "bodyweight",
       "name": "Air Squat",
       "normalized_name": "airsquat",
       "uses_reps": true,
-      "uses_weight": true,
+      "uses_weight": false,
       "uses_distance": false,
       "uses_time": false
     },
     {
       "id": 37,
-      "name": "Running",
-      "normalized_name": "running",
+      "type": "run",
+      "name": "Outdoor",
+      "normalized_name": "outdoor",
       "uses_reps": false,
       "uses_weight": false,
       "uses_distance": true,
@@ -336,8 +373,9 @@
     },
     {
       "id": 38,
-      "name": "Treadmill Run",
-      "normalized_name": "treadmillrun",
+      "type": "run",
+      "name": "Treadmill",
+      "normalized_name": "treadmill",
       "uses_reps": false,
       "uses_weight": false,
       "uses_distance": true,
@@ -345,8 +383,9 @@
     },
     {
       "id": 39,
-      "name": "Outdoor Cycling",
-      "normalized_name": "outdoorcycling",
+      "type": "cycle",
+      "name": "Outdoor",
+      "normalized_name": "outdoor",
       "uses_reps": false,
       "uses_weight": false,
       "uses_distance": true,
@@ -354,8 +393,9 @@
     },
     {
       "id": 40,
-      "name": "Stationary Bike",
-      "normalized_name": "stationarybike",
+      "type": "cycle",
+      "name": "Stationary",
+      "normalized_name": "stationary",
       "uses_reps": false,
       "uses_weight": false,
       "uses_distance": true,
@@ -363,8 +403,9 @@
     },
     {
       "id": 41,
-      "name": "Rowing Machine",
-      "normalized_name": "rowingmachine",
+      "type": "row",
+      "name": "Machine",
+      "normalized_name": "machine",
       "uses_reps": false,
       "uses_weight": false,
       "uses_distance": true,
@@ -372,8 +413,9 @@
     },
     {
       "id": 42,
-      "name": "Swimming",
-      "normalized_name": "swimming",
+      "type": "swim",
+      "name": "Mixed",
+      "normalized_name": "mixed",
       "uses_reps": false,
       "uses_weight": false,
       "uses_distance": true,
@@ -381,8 +423,9 @@
     },
     {
       "id": 43,
-      "name": "Walking",
-      "normalized_name": "walking",
+      "type": "walk",
+      "name": "Outdoor",
+      "normalized_name": "outdoor",
       "uses_reps": false,
       "uses_weight": false,
       "uses_distance": true,
@@ -390,6 +433,7 @@
     },
     {
       "id": 44,
+      "type": "other",
       "name": "Elliptical Trainer",
       "normalized_name": "ellipticaltrainer",
       "uses_reps": false,
@@ -399,6 +443,7 @@
     },
     {
       "id": 45,
+      "type": "other",
       "name": "Stair Climber",
       "normalized_name": "stairclimber",
       "uses_reps": false,
@@ -408,6 +453,7 @@
     },
     {
       "id": 46,
+      "type": "bodyweight",
       "name": "Plank",
       "normalized_name": "plank",
       "uses_reps": false,
@@ -417,6 +463,7 @@
     },
     {
       "id": 47,
+      "type": "bodyweight",
       "name": "Side Plank",
       "normalized_name": "sideplank",
       "uses_reps": false,
@@ -426,6 +473,7 @@
     },
     {
       "id": 48,
+      "type": "bodyweight",
       "name": "Wall Sit",
       "normalized_name": "wallsit",
       "uses_reps": false,
@@ -435,6 +483,7 @@
     },
     {
       "id": 49,
+      "type": "bodyweight",
       "name": "Dead Hang",
       "normalized_name": "deadhang",
       "uses_reps": false,
@@ -444,6 +493,7 @@
     },
     {
       "id": 50,
+      "type": "bodyweight",
       "name": "Hollow Body Hold",
       "normalized_name": "hollowbodyhold",
       "uses_reps": false,
@@ -453,6 +503,7 @@
     },
     {
       "id": 51,
+      "type": "bodyweight",
       "name": "L-Sit",
       "normalized_name": "lsit",
       "uses_reps": false,
@@ -462,6 +513,7 @@
     },
     {
       "id": 52,
+      "type": "bodyweight",
       "name": "Glute Bridge Hold",
       "normalized_name": "glutebridgehold",
       "uses_reps": false,
@@ -471,6 +523,7 @@
     },
     {
       "id": 53,
+      "type": "other",
       "name": "Jump Rope",
       "normalized_name": "jumprope",
       "uses_reps": false,
@@ -480,6 +533,7 @@
     },
     {
       "id": 54,
+      "type": "weights",
       "name": "Sled Push",
       "normalized_name": "sledpush",
       "uses_reps": false,
@@ -489,6 +543,7 @@
     },
     {
       "id": 55,
+      "type": "weights",
       "name": "Sled Pull",
       "normalized_name": "sledpull",
       "uses_reps": false,
@@ -498,11 +553,112 @@
     },
     {
       "id": 56,
+      "type": "weights",
       "name": "Farmer's Carry",
       "normalized_name": "farmerscarry",
       "uses_reps": false,
       "uses_weight": true,
       "uses_distance": true,
+      "uses_time": false
+    },
+    {
+      "id": 57,
+      "type": "swim",
+      "name": "Freestyle",
+      "normalized_name": "freestyle",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": true,
+      "uses_time": true
+    },
+    {
+      "id": 58,
+      "type": "swim",
+      "name": "Breaststroke",
+      "normalized_name": "breaststroke",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": true,
+      "uses_time": true
+    },
+    {
+      "id": 59,
+      "type": "swim",
+      "name": "Backstroke",
+      "normalized_name": "backstroke",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": true,
+      "uses_time": true
+    },
+    {
+      "id": 60,
+      "type": "swim",
+      "name": "Butterfly",
+      "normalized_name": "butterfly",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": true,
+      "uses_time": true
+    },
+    {
+      "id": 61,
+      "type": "run",
+      "name": "Trail",
+      "normalized_name": "trail",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": true,
+      "uses_time": true
+    },
+    {
+      "id": 62,
+      "type": "run",
+      "name": "Track",
+      "normalized_name": "track",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": true,
+      "uses_time": true
+    },
+    {
+      "id": 63,
+      "type": "cycle",
+      "name": "Road",
+      "normalized_name": "road",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": true,
+      "uses_time": true
+    },
+    {
+      "id": 64,
+      "type": "cycle",
+      "name": "Cross-Country",
+      "normalized_name": "crosscountry",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": true,
+      "uses_time": true
+    },
+    {
+      "id": 65,
+      "type": "walk",
+      "name": "Treadmill",
+      "normalized_name": "treadmill",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": true,
+      "uses_time": true
+    },
+    {
+      "id": 66,
+      "type": "body",
+      "name": "Body weight",
+      "normalized_name": "bodyweight",
+      "uses_reps": false,
+      "uses_weight": true,
+      "uses_distance": false,
       "uses_time": false
     }
   ]

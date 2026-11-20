@@ -34,8 +34,10 @@ const PRECACHE = [
   'manifest.json',
   'favicon.png',
   'version.json',
-  'drift_worker.js',
-  'sqlite3.wasm',
+  // Versioned names; must match web_database_location.dart (checked by
+  // test/core/storage/web_assets_test.dart).
+  'drift_worker-2.35.4.js',
+  'sqlite3-3.5.2.wasm',
   'icons/Icon-192.png',
   'icons/Icon-512.png',
   'icons/Icon-maskable-192.png',
