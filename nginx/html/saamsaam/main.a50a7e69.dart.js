@@ -46440,7 +46440,7 @@ if(!$.c28()||$.c__!=null)return
 s=v.G
 r=s.document.createElement("div")
 r.id="kbd-probe"
-r.style.cssText="position:fixed;top:0;left:0;z-index:2147483647;background:rgba(0,0,0,0.72);color:#7CFC00;font:10px/1.25 monospace;white-space:pre;padding:3px 5px;pointer-events:none;max-width:96vw;overflow:hidden;"
+r.style.cssText="position:fixed;top:0;left:0;z-index:2147483647;background:rgba(0,0,0,0.72);color:#7CFC00;font:10px/1.25 monospace;white-space:pre-wrap;word-break:break-all;padding:3px 5px;pointer-events:none;max-width:96vw;overflow:hidden;"
 s.document.documentElement.append(r)
 $.c__=r
 q=A.ey(new A.bPC())
