@@ -3,6 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+  <!-- Keyboard probe (S12): `?kbdfix=0` turns the fix off for an A/B on one
+       build. With the fix off, interactive-widget is also stripped here, so the
+       off case matches the shipped build exactly. -->
+  <script>
+    (function () {
+      if (/[?&]kbdfix=0(&|$)/.test(location.search)) {
+        var m = document.querySelector('meta[name="viewport"]');
+        if (m) m.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      } else {
+        document.documentElement.classList.add('kbdfix');
+      }
+    })();
+  </script>
   <meta name="theme-color" content="#1B6EF3">
   <title>SaamSaam</title>
   <!-- Flutter substitutes this at build time: "/" by default, or whatever
@@ -20,6 +33,9 @@
        survived a rotation and left a blank bar above the app. */
     html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
     body { user-select: none; -webkit-user-select: none; }
+    /* !important beats the engine's inline `overflow: hidden` on <body>; clip,
+       unlike hidden, also forbids programmatic scrolling. */
+    html.kbdfix, html.kbdfix body { overflow: clip !important; }
     #loading {
       display: flex; align-items: center; justify-content: center;
       height: 100vh; font-family: system-ui, sans-serif; color: #666;
