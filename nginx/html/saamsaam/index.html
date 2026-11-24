@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
   <meta name="theme-color" content="#1B6EF3">
   <title>SaamSaam</title>
   <!-- Flutter substitutes this at build time: "/" by default, or whatever
@@ -15,7 +15,11 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
   <style>
-    body { margin: 0; overflow-y: scroll; user-select: none; -webkit-user-select: none; }
+    /* Flutter owns all scrolling. A scrollable document let the browser scroll
+       it to reveal the hidden text input while the keyboard was open; the offset
+       survived a rotation and left a blank bar above the app. */
+    html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+    body { user-select: none; -webkit-user-select: none; }
     #loading {
       display: flex; align-items: center; justify-content: center;
       height: 100vh; font-family: system-ui, sans-serif; color: #666;
