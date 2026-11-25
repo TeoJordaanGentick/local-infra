@@ -244,7 +244,7 @@ What local-infra provides for gen1 and its LoRadian devices
   |---|---|---|
   | device — `GEN1_MQTT_LORADIAN_DEVICE_*` | `TEL/LR/+/+/+/` `data`, `status`, `settingsEcho`, `heart`, `error`, `diagnostics` | `TEL/LR/+/+/+/` `pgCfrm`, `settings`, `cmd`; `TEL/LR/timestamp` |
   | nexus — `GEN1_MQTT_NEXUS_*` (every gen1 nexus) | `TEL/#`, `server/#`, `timestamp` | `TEL/#`, `server/#`, `timestamp` |
-  | console — `GEN1_MQTT_CONSOLE_*` | nothing (explicit deny) | `TEL/LR/#` |
+  | console — `GEN1_MQTT_CONSOLE_*` | nothing (explicit deny) | `TEL/LR/+/+/+/` `data`, `status`, `heart`, `error`, `diagnostics`, `settingsEcho`; `TEL/LR/timestamp`. Not `settings` (carries the WiFi PSK and broker password to devices), `cmd` or `pgCfrm` |
 
   The device rules split by direction, so a device password cannot publish
   settings or commands to another device. A device must subscribe to named topics

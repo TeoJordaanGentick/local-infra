@@ -91,10 +91,16 @@ rules = [
 		"TEL/#", "server/#", "timestamp"
 	]}
 
-	# ── console (gen1 web, S-D14): read-only on the device topics; writes go
-	#    through the API. Explicit publish denial first, as for the viewer.
+	# ── console (gen1 web, S-D14): read-only, on an explicit list of what a browser
+	#    may read. Not settings (it carries the WiFi PSK and broker password down
+	#    to devices), cmd or pgCfrm. Writes go through the API.
+	#    Explicit publish denial first, as for the viewer.
 	{"permit": "deny",  "username": "@GEN1_MQTT_CONSOLE_USER@", "action": "publish",   "topics": ["#"]}
-	{"permit": "allow", "username": "@GEN1_MQTT_CONSOLE_USER@", "action": "subscribe", "topics": ["TEL/LR/#"]}
+	{"permit": "allow", "username": "@GEN1_MQTT_CONSOLE_USER@", "action": "subscribe", "topics": [
+		"TEL/LR/+/+/+/data", "TEL/LR/+/+/+/status", "TEL/LR/+/+/+/heart",
+		"TEL/LR/+/+/+/error", "TEL/LR/+/+/+/diagnostics", "TEL/LR/+/+/+/settingsEcho",
+		"TEL/LR/timestamp"
+	]}
 
 	# ── default: deny anything not explicitly allowed above.
 	{"permit": "deny"}
