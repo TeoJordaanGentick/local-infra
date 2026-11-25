@@ -240,7 +240,7 @@ What local-infra provides for gen1 and its LoRadian devices
 
   | Account (pragma keys) | Publish | Subscribe |
   |---|---|---|
-  | device — `GEN1_MQTT_LORADIAN_DEVICE_*` | `TEL/LR/+/+/+/` `data`, `status`, `settingsEcho`, `heart`, `error`, `diagnostics` | `TEL/LR/+/+/+/` `pgCfrm`, `settings`, `cmd`; `timestamp` |
+  | device — `GEN1_MQTT_LORADIAN_DEVICE_*` | `TEL/LR/+/+/+/` `data`, `status`, `settingsEcho`, `heart`, `error`, `diagnostics` | `TEL/LR/+/+/+/` `pgCfrm`, `settings`, `cmd`; `TEL/LR/timestamp` |
   | nexus — `GEN1_MQTT_NEXUS_*` (every gen1 nexus) | `TEL/#`, `server/#`, `timestamp` | `TEL/#`, `server/#`, `timestamp` |
   | console — `GEN1_MQTT_CONSOLE_*` | nothing (explicit deny) | `TEL/LR/#` |
 

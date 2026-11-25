@@ -65,7 +65,7 @@ rules = [
 
 	# ══ gen1 LoRadian — topics: loradian-firmware _docs/plan/server/nexus.md ══
 	# Device topics are TEL/LR/<app>/<deviceId>/<firmVer>/<topic>, one device per
-	# topic; `timestamp` is one top-level broadcast. The rules split by DIRECTION,
+	# topic; `TEL/LR/timestamp` is one broadcast with no device ID. The rules split by DIRECTION,
 	# not only by the TEL/LR/ root: a device may publish only what a device sends
 	# and subscribe only to what the server sends, so a leaked device password
 	# cannot push settings or commands to another device. A device subscription
@@ -80,7 +80,7 @@ rules = [
 	]}
 	# ── device: downlinks addressed to it or its nodes, and the server clock.
 	{"permit": "allow", "username": "@GEN1_MQTT_LORADIAN_DEVICE_USER@", "action": "subscribe", "topics": [
-		"TEL/LR/+/+/+/pgCfrm", "TEL/LR/+/+/+/settings", "TEL/LR/+/+/+/cmd", "timestamp"
+		"TEL/LR/+/+/+/pgCfrm", "TEL/LR/+/+/+/settings", "TEL/LR/+/+/+/cmd", "TEL/LR/timestamp"
 	]}
 
 	# ── nexus (every gen1 nexus; internal to the server): full pub/sub on gen1's
