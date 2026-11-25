@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# svc-scripts 0.1.3 — canonical copy: agollum/docker/services/
+# svc-scripts 0.1.4 — canonical copy: agollum/docker/services/
 # Edit there and copy the whole set across; svc-compose.sh is sourced by
 # the others, so a half-updated set breaks in ways that look like a bug.
 # ============================================================
-# Build .env from .env.example, filling secrets from the pragma file.
+# Build .env from .env.example, filling secrets from the pragma file -- and
+# every other .env.<name>.example into its .env.<name> the same way.
 #
 #   ./svc-build-env.sh                # build; offer to stub whatever is missing
 #   ./svc-build-env.sh --defaults     # same, but never prompt (takes the yes)
@@ -124,6 +125,34 @@
 # would end up with a file where some values are decisions and some
 # are guesses, and nothing recording which.
 #
+# ── More than one env file ───────────────────────────────────
+#
+# Every .env.<name>.example beside .env.example is built in the same run, into
+# .env.<name>: .env.api.example -> .env.api. A service reads those through
+# compose's `env_file:`, which keeps a long settings block out of compose.yml.
+#
+# Each is built exactly like .env.example -- "replace" values filled from the
+# pragma file, everything else copied -- and each is reported on its own. One
+# that cannot be built does not stop the others, but the run exits non-zero,
+# so `./svc-build-env.sh && ./svc-start.sh` still stops.
+#
+# What differs from .env:
+#
+#   - nothing in an env_file can feed compose.yml itself: an image tag, a
+#     volume path, a container name. Those stay in .env.
+#   - compose fills ${VAR} in an env_file's values from .env, as it does in
+#     compose.yml (Compose 2.39 and 5.x; old releases passed the text through
+#     literally). That is how such a file renames: DB_PASSWORD=${MYSQL_PASSWORD}
+#     hands the app its spelling of a secret the pragma keeps under the shared
+#     name, so the pragma never needs a second key for it. $$ is a literal $,
+#     as in .env, so the $ doubling below is right for both.
+#
+# The generated files hold secrets once a template has a "replace" value, so
+# the infra repo's .gitignore must ignore them -- and must not ignore the
+# .example templates beside them.
+#
+# TEMPLATE and OUTPUT in the environment build that one pair only, as before.
+#
 # ── What it will not do ──────────────────────────────────────
 #
 # It refuses to write a .env that still contains a placeholder.
@@ -148,6 +177,10 @@ set -euo pipefail
 # PRAGMA_FILE is a TEST SEAM, not a supported production setting. Nothing on a
 # real server should set it.
 PRAGMA_FILE="${PRAGMA_FILE:-/srv/data/pragma}"
+# Asked for one pair by name: build just that. Otherwise build them all (below).
+ONE_TEMPLATE=false
+[[ -n "${TEMPLATE:-}${OUTPUT:-}" ]] && ONE_TEMPLATE=true
+ARGS=("$@")
 TEMPLATE="${TEMPLATE:-.env.example}"
 OUTPUT="${OUTPUT:-.env}"
 CHECK_ONLY=false
@@ -184,6 +217,24 @@ done
 # whether they are allowed to write. Picking a winner would be a guess.
 if $CHECK_ONLY && $INIT_PRAGMA; then
   usage "--check and --init-pragma are mutually exclusive (--check writes nothing)"
+fi
+
+# ── every template, one run each ─────────────────────────────
+# Each pair is built by a fresh run of this script, so every rule above holds
+# for every file and none of them can leak state into the next.
+if ! $ONE_TEMPLATE; then
+  [[ -f .env.example ]] || die ".env.example not found (run this from the infra repo root)"
+  status=0
+  for t in .env.example .env.*.example; do
+    [[ -f "$t" ]] || continue
+    # bash, not ./: a copy that lost its execute bit still builds. The guarded
+    # expansion is because "${ARGS[@]}" on an empty array is an unbound
+    # variable under set -u in bash before 4.4.
+    TEMPLATE="$t" OUTPUT="${t%.example}" \
+      bash "$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")" ${ARGS[@]+"${ARGS[@]}"} \
+      || status=$?
+  done
+  exit "$status"
 fi
 
 [[ -f "$TEMPLATE" ]] || die "$TEMPLATE not found (run this from the infra repo root)"
