@@ -102,7 +102,8 @@ edit** — the per-app names use the `.localhost` TLD, which browsers send to
 | `http://talosot.localhost/` | same as above | `talosot-api:8080` | same |
 | `http://rms.localhost/` | rms React SPA (`nginx/html/rms`) | `rms-api:8080` | — |
 | `http://saamsaam.localhost/`, `https://sm.teojordaan.com/` | saamsaam Flutter SPA (`nginx/html/saamsaam`) | `saamsaam-api:8080` (prefix stripped) | — |
-| `http://gen1.localhost/`, `https://gen-1.teojordaan.com/` | gen1 console, Flutter (`nginx/html/gen1`) | `gen1-api-staging:80` (prefix kept) — **placeholder** | `/query/` → `go-data:80` — **placeholder** |
+| `http://gen1.localhost/`, `https://gen-1.teojordaan.com/` | gen1 **staging** console container (`gen1-web-staging:8080`), everything proxied | — (the console calls `gen1api.` directly) | no bundle in `nginx/html/` |
+| `http://gen1api.localhost/`, `https://gen1api.teojordaan.com/` | — (API only) | `gen1-api-staging:80` (everything, path kept) | `/query/` → `go-data:80` |
 | `http://mqtt.localhost/mqtt`, `wss://mqtt.teojordaan.com/mqtt` | — (only `/mqtt`; anything else 404) | — | `/mqtt` WS → `mqtt:8083` |
 
 The `*.teojordaan.com` names arrive through **this laptop's Cloudflare tunnel**
@@ -112,10 +113,11 @@ vhost; `server_name` is what routes them. The tunnel's connector currently runs
 from `saamsaam-infra` (`saamsaam-cloudflared`), so these hostnames are up only
 while that stack runs.
 
-The gen1 upstreams are **placeholders**: they follow gen1-infra's container names
-today (`gen1-api-staging`, `go-data`), and gen1-infra is being restructured.
-Confirm them, and whether the box runs the staging or the live slot, before
-relying on the vhost.
+The gen1 vhosts point at gen1-infra's **staging** slot containers (`gen1-web-staging`,
+`gen1-api-staging`, and `go-data` for `/query/`), resolved per request, so nginx
+starts with gen1 down and those vhosts answer 502 until it is up. The web bundle
+is not in `nginx/html/`: the console container serves it. The `gen1-` prefix is
+gen1-infra's `PROJECT_NAME`.
 
 The web bundles are **bind-mounted** from `nginx/html/<app>/`; nginx serves them
 straight from the working tree. On a fresh clone each holds only a placeholder
@@ -247,7 +249,7 @@ What local-infra provides for gen1 and its LoRadian devices
   The device rules split by direction, so a device password cannot publish
   settings or commands to another device. A device must subscribe to named topics
   (`+` levels are fine); a device filter `TEL/LR/#` or `…/#` is denied.
-- **Two vhosts**, `gen-1.teojordaan.com` and `mqtt.teojordaan.com` (see
+- **Three vhosts**, `gen-1.teojordaan.com`, `gen1api.teojordaan.com` and `mqtt.teojordaan.com` (see
   "Domains and routes").
 
 New pragma keys: `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, `MYSQL_PASSWORD`,
@@ -272,7 +274,7 @@ docker compose restart nginx       # picks up the new vhosts (bind-mount inode, 
 ```
 
 The two restarts each drop that service for a few seconds for every app on the
-box. Outside this box, `gen-1.teojordaan.com` and `mqtt.teojordaan.com` also
+box. Outside this box, `gen-1.teojordaan.com`, `gen1api.teojordaan.com` and `mqtt.teojordaan.com` also
 need public hostnames on the tunnel (Cloudflare dashboard, → `http://nginx:80`).
 
 ---
