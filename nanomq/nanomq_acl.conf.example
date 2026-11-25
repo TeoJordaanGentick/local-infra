@@ -74,28 +74,27 @@ rules = [
 
 	# ── device (gateway firmware): uplinks, for itself and for each of its nodes
 	#    under the node's own <deviceId>.
-	{"permit": "allow", "username": "@GEN1_LORADIAN_MQTT_DEVICE_USER@", "action": "publish", "topics": [
+	{"permit": "allow", "username": "@GEN1_MQTT_LORADIAN_DEVICE_USER@", "action": "publish", "topics": [
 		"TEL/LR/+/+/+/data", "TEL/LR/+/+/+/status", "TEL/LR/+/+/+/settingsEcho",
 		"TEL/LR/+/+/+/heart", "TEL/LR/+/+/+/error", "TEL/LR/+/+/+/diagnostics"
 	]}
 	# ── device: downlinks addressed to it or its nodes, and the server clock.
-	{"permit": "allow", "username": "@GEN1_LORADIAN_MQTT_DEVICE_USER@", "action": "subscribe", "topics": [
+	{"permit": "allow", "username": "@GEN1_MQTT_LORADIAN_DEVICE_USER@", "action": "subscribe", "topics": [
 		"TEL/LR/+/+/+/pgCfrm", "TEL/LR/+/+/+/settings", "TEL/LR/+/+/+/cmd", "timestamp"
 	]}
 
-	# ── nexus (gen1-loradian-nexus): ingests every uplink and the API's nudge,
-	#    publishes the downlinks and the clock.
-	{"permit": "allow", "username": "@GEN1_LORADIAN_MQTT_NEXUS_USER@", "action": "subscribe", "topics": [
-		"TEL/LR/#", "server/loradian/nudge"
-	]}
-	{"permit": "allow", "username": "@GEN1_LORADIAN_MQTT_NEXUS_USER@", "action": "publish", "topics": [
-		"TEL/LR/+/+/+/pgCfrm", "TEL/LR/+/+/+/settings", "TEL/LR/+/+/+/cmd", "timestamp"
+	# ── nexus (every gen1 nexus; internal to the server): full pub/sub on gen1's
+	#    own topic roots, so a new nexus needs no ACL change. Deliberately not "#":
+	#    this broker is shared, and a gen1 bug must not be able to write into
+	#    another product's topics (TalosOT's spBv1.0/#).
+	{"permit": "allow", "username": "@GEN1_MQTT_NEXUS_USER@", "action": "pubsub", "topics": [
+		"TEL/#", "server/#", "timestamp"
 	]}
 
 	# ── console (gen1 web, S-D14): read-only on the device topics; writes go
 	#    through the API. Explicit publish denial first, as for the viewer.
-	{"permit": "deny",  "username": "@GEN1_LORADIAN_MQTT_CONSOLE_USER@", "action": "publish",   "topics": ["#"]}
-	{"permit": "allow", "username": "@GEN1_LORADIAN_MQTT_CONSOLE_USER@", "action": "subscribe", "topics": ["TEL/LR/#"]}
+	{"permit": "deny",  "username": "@GEN1_MQTT_CONSOLE_USER@", "action": "publish",   "topics": ["#"]}
+	{"permit": "allow", "username": "@GEN1_MQTT_CONSOLE_USER@", "action": "subscribe", "topics": ["TEL/LR/#"]}
 
 	# ── default: deny anything not explicitly allowed above.
 	{"permit": "deny"}

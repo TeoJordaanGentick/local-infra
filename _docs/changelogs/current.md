@@ -9,7 +9,7 @@ unreleased section and is copied to `v<X.Y.Z>.md` at release.
 ### Added
 - gen1 LoRadian stage 1: a `mysql` service (8.4.13, `gen1` database on first
   boot); three NanoMQ accounts — LoRadian device, gen1-loradian-nexus and a
-  read-only console — under new `GEN1_LORADIAN_MQTT_*` pragma keys; nginx vhosts
+  read-only console — under new `GEN1_MQTT_LORADIAN_DEVICE_*`, `GEN1_MQTT_NEXUS_*` and `GEN1_MQTT_CONSOLE_*` pragma keys; nginx vhosts
   `gen-1.teojordaan.com` / `gen1.localhost` (console, `/api/` and `/query/` to
   placeholder gen1 upstreams) and `mqtt.teojordaan.com` / `mqtt.localhost`
   (`/mqtt` to the broker's WebSocket listener). Existing services, accounts and

@@ -240,9 +240,9 @@ What local-infra provides for gen1 and its LoRadian devices
 
   | Account (pragma keys) | Publish | Subscribe |
   |---|---|---|
-  | device — `GEN1_LORADIAN_MQTT_DEVICE_*` | `TEL/LR/+/+/+/` `data`, `status`, `settingsEcho`, `heart`, `error`, `diagnostics` | `TEL/LR/+/+/+/` `pgCfrm`, `settings`, `cmd`; `timestamp` |
-  | nexus — `GEN1_LORADIAN_MQTT_NEXUS_*` | `TEL/LR/+/+/+/` `pgCfrm`, `settings`, `cmd`; `timestamp` | `TEL/LR/#`, `server/loradian/nudge` |
-  | console — `GEN1_LORADIAN_MQTT_CONSOLE_*` | nothing (explicit deny) | `TEL/LR/#` |
+  | device — `GEN1_MQTT_LORADIAN_DEVICE_*` | `TEL/LR/+/+/+/` `data`, `status`, `settingsEcho`, `heart`, `error`, `diagnostics` | `TEL/LR/+/+/+/` `pgCfrm`, `settings`, `cmd`; `timestamp` |
+  | nexus — `GEN1_MQTT_NEXUS_*` (every gen1 nexus) | `TEL/#`, `server/#`, `timestamp` | `TEL/#`, `server/#`, `timestamp` |
+  | console — `GEN1_MQTT_CONSOLE_*` | nothing (explicit deny) | `TEL/LR/#` |
 
   The device rules split by direction, so a device password cannot publish
   settings or commands to another device. A device must subscribe to named topics
@@ -254,7 +254,7 @@ New pragma keys: `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, `MYSQL_PASSWORD`,
 `MYSQL_USER_2`, `MYSQL_PASSWORD_2`, `MYSQL_USER_3`, `MYSQL_PASSWORD_3`,
 `MYSQL_USER_4`, `MYSQL_PASSWORD_4`, `MYSQL_USER_QUERY_API`,
 `MYSQL_PASSWORD_QUERY_API`,
-`GEN1_LORADIAN_MQTT_{DEVICE,NEXUS,CONSOLE}_{USER,PASSWORD}`. Every broker username
+`GEN1_MQTT_LORADIAN_DEVICE_*, GEN1_MQTT_NEXUS_* and GEN1_MQTT_CONSOLE_*`. Every broker username
 must differ from the others; `svc-gen-nanomq.sh` refuses a duplicate.
 
 Bringing it onto a box already running local-infra, in WSL:
@@ -323,8 +323,8 @@ parallel name (`PG_USER` vs `POSTGRES_USER`) is how two keys end up holding what
 should be one value, and they drift.
 
 A value **one app owns** carries that app's prefix instead, so the bare name never
-claims it is shared: the gen1 LoRadian broker accounts are
-`GEN1_LORADIAN_MQTT_*`. `MYSQL_USER` / `MYSQL_PASSWORD` stay bare because they
+claims it is shared: the gen1 broker accounts are
+`GEN1_MQTT_LORADIAN_DEVICE_*`, `GEN1_MQTT_NEXUS_*` and `GEN1_MQTT_CONSOLE_*` (only the device account names a device family: it is the one whose credentials leave the server, so its topic rights are LoRadian's alone). `MYSQL_USER` / `MYSQL_PASSWORD` stay bare because they
 are gen1-infra's spelling of the account it dials with — one pragma entry for both
 repos.
 
