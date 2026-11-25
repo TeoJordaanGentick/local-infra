@@ -1,12 +1,15 @@
 # ============================================================
 # NanoMQ ACL — TEMPLATE. Rendered to nanomq_acl.conf by svc-gen-nanomq.sh,
-# which substitutes the three @..._USER@ tokens below with the MQTT_USER /
-# MQTT_NODE_USER / MQTT_VIEWER_USER values from .env (themselves from the shared
-# pragma). The generated nanomq_acl.conf is gitignored; only this .example is
-# committed. Do NOT hand-edit the generated file — edit this template.
+# which substitutes each @..._USER@ token below with that account's username
+# from .env (itself from the shared pragma): the three legacy tokens map to
+# MQTT_USER / MQTT_NODE_USER / MQTT_VIEWER_USER, any other @<KEY>_USER@ to
+# <KEY>_USER, with its password in <KEY>_PASSWORD. A token here IS an account:
+# the script adds it to nanomq_pwd.conf too. The generated nanomq_acl.conf is
+# gitignored; only this .example is committed. Do NOT hand-edit the generated
+# file — edit this template.
 #
 # Why generated: the ACL keys on the broker USERNAMES, and so does the password
-# file (nanomq_pwd.conf, likewise generated from the same three .env values). If
+# file (nanomq_pwd.conf, likewise generated from the same .env values). If
 # the ACL hardcoded the names it would silently drift from the pwd file the
 # moment someone changed a username in the pragma — the account would then
 # authenticate but match no rule and hit the default-deny, with no error saying
@@ -16,7 +19,8 @@
 # evaluated top-to-bottom, first match wins; anything that matches no rule is
 # denied (auth.no_match = deny, and the trailing catch-all below).
 #
-# Three roles, keyed on the broker username (see nanomq_pwd.conf):
+# TalosOT's three roles, keyed on the broker username (see nanomq_pwd.conf);
+# gen1 LoRadian's three follow them in the rules below:
 #
 #   service (@SERVICE_USER@) — api + nexus. Broad pub/sub: they ingest all
 #                       telemetry and issue every DCMD/NCMD on the operator's
@@ -58,6 +62,40 @@ rules = [
 	#    needs for live data.
 	{"permit": "deny",  "username": "@VIEWER_USER@", "action": "publish",   "topics": ["#"]}
 	{"permit": "allow", "username": "@VIEWER_USER@", "action": "subscribe", "topics": ["spBv1.0/#"]}
+
+	# ══ gen1 LoRadian — topics: loradian-firmware _docs/plan/server/nexus.md ══
+	# Device topics are TEL/LR/<app>/<deviceId>/<firmVer>/<topic>, one device per
+	# topic; `timestamp` is one top-level broadcast. The rules split by DIRECTION,
+	# not only by the TEL/LR/ root: a device may publish only what a device sends
+	# and subscribe only to what the server sends, so a leaked device password
+	# cannot push settings or commands to another device. A device subscription
+	# must therefore name its topic (TEL/LR/<app>/<id>/<ver>/cmd, + levels allowed);
+	# a device filter of TEL/LR/# or .../# is denied.
+
+	# ── device (gateway firmware): uplinks, for itself and for each of its nodes
+	#    under the node's own <deviceId>.
+	{"permit": "allow", "username": "@GEN1_LORADIAN_MQTT_DEVICE_USER@", "action": "publish", "topics": [
+		"TEL/LR/+/+/+/data", "TEL/LR/+/+/+/status", "TEL/LR/+/+/+/settingsEcho",
+		"TEL/LR/+/+/+/heart", "TEL/LR/+/+/+/error", "TEL/LR/+/+/+/diagnostics"
+	]}
+	# ── device: downlinks addressed to it or its nodes, and the server clock.
+	{"permit": "allow", "username": "@GEN1_LORADIAN_MQTT_DEVICE_USER@", "action": "subscribe", "topics": [
+		"TEL/LR/+/+/+/pgCfrm", "TEL/LR/+/+/+/settings", "TEL/LR/+/+/+/cmd", "timestamp"
+	]}
+
+	# ── nexus (gen1-loradian-nexus): ingests every uplink and the API's nudge,
+	#    publishes the downlinks and the clock.
+	{"permit": "allow", "username": "@GEN1_LORADIAN_MQTT_NEXUS_USER@", "action": "subscribe", "topics": [
+		"TEL/LR/#", "server/loradian/nudge"
+	]}
+	{"permit": "allow", "username": "@GEN1_LORADIAN_MQTT_NEXUS_USER@", "action": "publish", "topics": [
+		"TEL/LR/+/+/+/pgCfrm", "TEL/LR/+/+/+/settings", "TEL/LR/+/+/+/cmd", "timestamp"
+	]}
+
+	# ── console (gen1 web, S-D14): read-only on the device topics; writes go
+	#    through the API. Explicit publish denial first, as for the viewer.
+	{"permit": "deny",  "username": "@GEN1_LORADIAN_MQTT_CONSOLE_USER@", "action": "publish",   "topics": ["#"]}
+	{"permit": "allow", "username": "@GEN1_LORADIAN_MQTT_CONSOLE_USER@", "action": "subscribe", "topics": ["TEL/LR/#"]}
 
 	# ── default: deny anything not explicitly allowed above.
 	{"permit": "deny"}
