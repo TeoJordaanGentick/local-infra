@@ -2,20 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
-  <!-- Keyboard probe (S12): `?kbdfix=0` turns the fix off for an A/B on one
-       build. With the fix off, interactive-widget is also stripped here, so the
-       off case matches the shipped build exactly. -->
-  <script>
-    (function () {
-      if (/[?&]kbdfix=0(&|$)/.test(location.search)) {
-        var m = document.querySelector('meta[name="viewport"]');
-        if (m) m.setAttribute('content', 'width=device-width, initial-scale=1.0');
-      } else {
-        document.documentElement.classList.add('kbdfix');
-      }
-    })();
-  </script>
+  <!-- Only styles the loading screen: the engine replaces every viewport meta
+       at start-up. interactive-widget is added after the first frame, in
+       lib/core/keyboard/web_keyboard_web.dart. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#1B6EF3">
   <title>SaamSaam</title>
   <!-- Flutter substitutes this at build time: "/" by default, or whatever
@@ -28,14 +18,16 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
   <style>
-    /* Flutter owns all scrolling. A scrollable document let the browser scroll
-       it to reveal the hidden text input while the keyboard was open; the offset
-       survived a rotation and left a blank bar above the app. */
-    html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+    /* Flutter owns all scrolling; the document must never scroll (S12, the CSS
+       half of the keyboard fix). The engine pins <body> with inline styles,
+       including overflow: hidden, but hidden still allows programmatic
+       scrolling, so the browser may scroll the body to reveal the engine's
+       hidden text input when the keyboard opens. clip forbids that;
+       !important beats the engine's inline value. On <html> the value applies
+       to the viewport, where clip acts as hidden. Tested on Android Chrome
+       together with the viewport meta change (staging probe, 2026-11-24). */
+    html, body { height: 100%; margin: 0; overflow: clip !important; overscroll-behavior: none; }
     body { user-select: none; -webkit-user-select: none; }
-    /* !important beats the engine's inline `overflow: hidden` on <body>; clip,
-       unlike hidden, also forbids programmatic scrolling. */
-    html.kbdfix, html.kbdfix body { overflow: clip !important; }
     #loading {
       display: flex; align-items: center; justify-content: center;
       height: 100vh; font-family: system-ui, sans-serif; color: #666;

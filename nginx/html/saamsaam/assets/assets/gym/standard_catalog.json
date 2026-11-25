@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "exercises": [
     {
       "id": 1,
@@ -659,6 +659,116 @@
       "uses_reps": false,
       "uses_weight": true,
       "uses_distance": false,
+      "uses_time": false
+    },
+    {
+      "id": 67,
+      "type": "combat",
+      "name": "Boxing",
+      "normalized_name": "boxing",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": false,
+      "uses_time": false
+    },
+    {
+      "id": 68,
+      "type": "combat",
+      "name": "Shadow Boxing",
+      "normalized_name": "shadowboxing",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": false,
+      "uses_time": false
+    },
+    {
+      "id": 69,
+      "type": "combat",
+      "name": "Heavy Bag Boxing",
+      "normalized_name": "heavybagboxing",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": false,
+      "uses_time": false
+    },
+    {
+      "id": 70,
+      "type": "combat",
+      "name": "Pad Work",
+      "normalized_name": "padwork",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": false,
+      "uses_time": false
+    },
+    {
+      "id": 71,
+      "type": "combat",
+      "name": "Kicking",
+      "normalized_name": "kicking",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": false,
+      "uses_time": false
+    },
+    {
+      "id": 72,
+      "type": "combat",
+      "name": "Heavy Bag Kicking",
+      "normalized_name": "heavybagkicking",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": false,
+      "uses_time": false
+    },
+    {
+      "id": 73,
+      "type": "combat",
+      "name": "Sparring",
+      "normalized_name": "sparring",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": false,
+      "uses_time": false
+    },
+    {
+      "id": 74,
+      "type": "combat",
+      "name": "Wrestling",
+      "normalized_name": "wrestling",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": false,
+      "uses_time": false
+    },
+    {
+      "id": 75,
+      "type": "combat",
+      "name": "Grappling",
+      "normalized_name": "grappling",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": false,
+      "uses_time": false
+    },
+    {
+      "id": 76,
+      "type": "bodyweight",
+      "name": "Box Jump",
+      "normalized_name": "boxjump",
+      "uses_reps": true,
+      "uses_weight": false,
+      "uses_distance": true,
+      "uses_time": false
+    },
+    {
+      "id": 77,
+      "type": "weights",
+      "name": "Box Jump",
+      "normalized_name": "boxjump",
+      "uses_reps": true,
+      "uses_weight": true,
+      "uses_distance": true,
       "uses_time": false
     }
   ]

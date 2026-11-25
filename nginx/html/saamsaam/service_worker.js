@@ -20,7 +20,13 @@
 //    a cache-busting query on it bypasses us to the network for update
 //    detection.
 //  - "Apply update" = purge this cache generation + reload; cache-first then
-//    re-fetches the new build atomically.
+//    re-fetches the build. A refill of an UNHASHED file (index.html,
+//    flutter_bootstrap.js, flutter.js, version.json, canvaskit/*, ...) asks the
+//    browser to revalidate (cache: 'no-cache'): a plain fetch would go through
+//    the HTTP cache, and Cloudflare rewrites the browser TTL of these files to
+//    hours, so the refill could hand back the old flutter_bootstrap.js — which
+//    names the old main.<hash>.dart.js — and the SW would cache the old build
+//    again. Hashed files are immutable, so their HTTP-cache copy is correct.
 
 const CACHE = 'saamsaam-shell-v1';
 
@@ -103,6 +109,27 @@ function isVersionProbe(url) {
   return url.pathname.endsWith('version.json') && url.search.length > 0;
 }
 
+// agollum patch-cache-bust.sh names a content-hashed file <name>.<8 hex>.<ext>
+// (main.<hash>.dart.js, MaterialIcons-Regular.<hash>.otf).
+const HASHED_NAME = /\.[0-9a-f]{8}\./i;
+
+function isHashed(url) {
+  return HASHED_NAME.test(url.pathname.slice(url.pathname.lastIndexOf('/') + 1));
+}
+
+// Fetch a shell file from the network, revalidating an unhashed one past the
+// HTTP cache (see the header). If that fails — offline — retry with the
+// request's own cache mode, so a copy still fresh in the HTTP cache can boot
+// the app as it did before; only a second failure is a real miss.
+async function fetchShell(req, url) {
+  if (isHashed(url)) return fetch(req);
+  try {
+    return await fetch(new Request(req, { cache: 'no-cache' }));
+  } catch (_) {
+    return fetch(req);
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -125,7 +152,7 @@ self.addEventListener('fetch', (event) => {
         const shell = await cache.match(new URL('index.html', self.registration.scope));
         if (shell) return shell;
         try {
-          const fresh = await fetch(req);
+          const fresh = await fetchShell(req, url);
           // Self-heal the shell. The precache is the ONLY other path that stores
           // index.html, and it runs solely on SW (re)install. So when PURGE_SHELL
           // (an "apply update") empties the cache while THIS file is unchanged —
@@ -159,7 +186,7 @@ self.addEventListener('fetch', (event) => {
       const hit = await cache.match(req);
       if (hit) return hit;
       try {
-        const res = await fetch(req);
+        const res = await fetchShell(req, url);
         // Only cache successful, basic (same-origin) responses.
         if (res && res.status === 200 && res.type === 'basic') {
           cache.put(req, res.clone());
