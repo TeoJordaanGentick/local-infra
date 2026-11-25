@@ -104,7 +104,7 @@ edit** — the per-app names use the `.localhost` TLD, which browsers send to
 | `http://saamsaam.localhost/`, `https://sm.teojordaan.com/` | saamsaam Flutter SPA (`nginx/html/saamsaam`) | `saamsaam-api:8080` (prefix stripped) | — |
 | `http://gen1.localhost/`, `https://gen-1.teojordaan.com/` | gen1 **staging** console container (`gen1-web-staging:8080`), everything proxied | — (the console calls `gen1api.` directly) | no bundle in `nginx/html/` |
 | `http://gen1api.localhost/`, `https://gen1api.teojordaan.com/` | — (API only) | `gen1-api-staging:80` (everything, path kept) | `/query/` → `go-data:80` |
-| `http://mqtt.localhost/mqtt`, `wss://mqtt.teojordaan.com/mqtt` | — (only `/mqtt`; anything else 404) | — | `/mqtt` WS → `mqtt:8083` |
+| `http://mqtt.localhost`, `wss://mqtt.teojordaan.com` (bare), and `/mqtt` on either | — (only `/` and `/mqtt`; anything else 404) | — | both WS → `mqtt:8083/mqtt` |
 
 The `*.teojordaan.com` names arrive through **this laptop's Cloudflare tunnel**
 (Teo's personal account, dashboard-managed ingress → `http://nginx:80`).
