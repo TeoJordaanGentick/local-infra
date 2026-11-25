@@ -231,7 +231,10 @@ no backing-service dependencies yet, so there is nothing to wire until
 What local-infra provides for gen1 and its LoRadian devices
 (`loradian-firmware/_docs/plan/server/deploy.md`):
 
-- **`mysql`** with a `gen1` database and the `MYSQL_USER` account (first boot).
+- **`mysql`** with the databases and accounts gen1 expects (first boot):
+  `production` and `staging` (account `MYSQL_USER`), `rain`, `water`, `level`
+  (one account each), and the query API's read-only account. Created by the
+  image plus `mysql/initdb.d/10-gen1.sh`, a copy of gen1-infra's script.
 - **Three broker accounts** in the ACL, after TalosOT's roles and before the
   catch-all deny. Device topics are `TEL/LR/<app>/<deviceId>/<firmVer>/<topic>`.
 
@@ -248,6 +251,9 @@ What local-infra provides for gen1 and its LoRadian devices
   "Domains and routes").
 
 New pragma keys: `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, `MYSQL_PASSWORD`,
+`MYSQL_USER_2`, `MYSQL_PASSWORD_2`, `MYSQL_USER_3`, `MYSQL_PASSWORD_3`,
+`MYSQL_USER_4`, `MYSQL_PASSWORD_4`, `MYSQL_USER_QUERY_API`,
+`MYSQL_PASSWORD_QUERY_API`,
 `GEN1_LORADIAN_MQTT_{DEVICE,NEXUS,CONSOLE}_{USER,PASSWORD}`. Every broker username
 must differ from the others; `svc-gen-nanomq.sh` refuses a duplicate.
 
@@ -287,12 +293,15 @@ need public hostnames on the tunnel (Cloudflare dashboard, → `http://nginx:80`
   inside the cluster (`talosot`, `gentick_rms`, …); those are created by the app
   (or by hand) — not re-initialised here. On an already-initialised data root the
   `POSTGRES_*`/`QUESTDB_*` init values are ignored.
-- **MySQL: one database made for you, the rest by hand.** On an empty
-  `mysql/` the image creates `MYSQL_DATABASE` (`gen1`) and grants `MYSQL_USER`
-  ALL on it — nothing more, and never again once the data dir exists. A second
-  database (a staging one, say) or another account is a one-off:
+- **MySQL: created once, on an empty data dir.** The image creates
+  `MYSQL_DATABASE` (`production`) and grants `MYSQL_USER` ALL on it;
+  `mysql/initdb.d/10-gen1.sh` then creates `staging`, `rain`, `water`, `level`
+  and their accounts. Never again once `mysql/` exists: a later pragma change, or
+  another database or account, is a one-off by hand:
   `docker exec -it mysql mysql -uroot -p` with `MYSQL_ROOT_PASSWORD`, then
-  `CREATE DATABASE …; GRANT ALL ON ….* TO '<MYSQL_USER>'@'%';`.
+  `CREATE DATABASE …; GRANT ALL ON ….* TO '<MYSQL_USER>'@'%';`. The script is a
+  copy of gen1-infra's `public/mysql/initdb.d/10-gen1.sh`; re-copy it when that
+  one changes.
 - **Nothing secret is committed.** `.env`, `nanomq/nanomq_pwd.conf` and
   `nanomq/nanomq_acl.conf` are gitignored (all generated at bring-up from `.env`);
   only `.env.example`, `nanomq_pwd.conf.example` and `nanomq_acl.conf.example` are

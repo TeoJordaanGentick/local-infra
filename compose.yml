@@ -160,10 +160,11 @@ services:
   # so clients must speak caching_sha2_password (Laravel's PDO and
   # go-sql-driver both do).
   #
-  # MYSQL_ROOT_PASSWORD / MYSQL_DATABASE / MYSQL_USER / MYSQL_PASSWORD apply on
-  # FIRST boot only (an empty data dir): the image creates the database and
-  # grants the user ALL on it. Any further database is created by hand — see
-  # README → "Where data lives".
+  # First boot only (an empty data dir): the image creates MYSQL_DATABASE
+  # (production) and grants MYSQL_USER ALL on it, then runs
+  # mysql/initdb.d/10-gen1.sh for the rest of what gen1 expects (staging, rain,
+  # water, level, their accounts, the query API's read-only account). Changing
+  # the pragma later changes nothing here — see README → "Where data lives".
   mysql:
     image: mysql:8.4.13
     container_name: mysql
@@ -173,6 +174,19 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      # Read only by initdb.d/10-gen1.sh, on first boot.
+      MYSQL_DATABASE_STAGING: ${MYSQL_DATABASE_STAGING}
+      MYSQL_DATABASE_2: ${MYSQL_DATABASE_2}
+      MYSQL_USER_2: ${MYSQL_USER_2}
+      MYSQL_PASSWORD_2: ${MYSQL_PASSWORD_2}
+      MYSQL_DATABASE_3: ${MYSQL_DATABASE_3}
+      MYSQL_USER_3: ${MYSQL_USER_3}
+      MYSQL_PASSWORD_3: ${MYSQL_PASSWORD_3}
+      MYSQL_DATABASE_4: ${MYSQL_DATABASE_4}
+      MYSQL_USER_4: ${MYSQL_USER_4}
+      MYSQL_PASSWORD_4: ${MYSQL_PASSWORD_4}
+      MYSQL_USER_QUERY_API: ${MYSQL_USER_QUERY_API}
+      MYSQL_PASSWORD_QUERY_API: ${MYSQL_PASSWORD_QUERY_API}
       TZ: ${TZ}
     networks:
       - backend-net
@@ -180,6 +194,7 @@ services:
       - "127.0.0.1:3306:3306" # Loopback only, like postgres: host clients, never the LAN
     volumes:
       - ${HOST_DATA_ROOT}/mysql:/var/lib/mysql
+      - ./mysql/initdb.d:/docker-entrypoint-initdb.d:ro
     # mysqladmin ping exits 0 whenever the server answers, even "Access denied",
     # so it needs no credential. TCP to 127.0.0.1 (not the socket) on purpose:
     # first-boot init runs a temporary server with networking off, so this stays
