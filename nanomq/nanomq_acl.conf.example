@@ -76,11 +76,13 @@ rules = [
 	#    under the node's own <deviceId>.
 	{"permit": "allow", "username": "@GEN1_MQTT_LORADIAN_DEVICE_USER@", "action": "publish", "topics": [
 		"TEL/LR/+/+/+/data", "TEL/LR/+/+/+/status", "TEL/LR/+/+/+/settingsEcho",
-		"TEL/LR/+/+/+/heart", "TEL/LR/+/+/+/error", "TEL/LR/+/+/+/diagnostics"
+		"TEL/LR/+/+/+/heart", "TEL/LR/+/+/+/error", "TEL/LR/+/+/+/diagnostics",
+		"TEL/LR/+/+/+/otaReq", "TEL/LR/+/+/+/otaState"
 	]}
 	# ── device: downlinks addressed to it or its nodes, and the server clock.
 	{"permit": "allow", "username": "@GEN1_MQTT_LORADIAN_DEVICE_USER@", "action": "subscribe", "topics": [
-		"TEL/LR/+/+/+/pgCfrm", "TEL/LR/+/+/+/settings", "TEL/LR/+/+/+/cmd", "TEL/LR/timestamp"
+		"TEL/LR/+/+/+/pgCfrm", "TEL/LR/+/+/+/settings", "TEL/LR/+/+/+/cmd", "TEL/LR/timestamp",
+		"TEL/LR/+/+/+/otaChunk"
 	]}
 
 	# ── nexus (every gen1 nexus; internal to the server): full pub/sub on gen1's
@@ -99,7 +101,7 @@ rules = [
 	{"permit": "allow", "username": "@GEN1_MQTT_CONSOLE_USER@", "action": "subscribe", "topics": [
 		"TEL/LR/+/+/+/data", "TEL/LR/+/+/+/status", "TEL/LR/+/+/+/heart",
 		"TEL/LR/+/+/+/error", "TEL/LR/+/+/+/diagnostics", "TEL/LR/+/+/+/settingsEcho",
-		"TEL/LR/timestamp"
+		"TEL/LR/+/+/+/otaState", "TEL/LR/timestamp"
 	]}
 
 	# ── default: deny anything not explicitly allowed above.
