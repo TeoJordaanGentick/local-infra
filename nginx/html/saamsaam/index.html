@@ -93,23 +93,59 @@
           return Promise.resolve(false);
         },
         applyUpdate: function () {
-          // Purge the cached shell generation, then hard-reload so cache-first
-          // re-fetches the new build atomically.
+          // The service worker serves every stable-named shell file
+          // network-first, so a reload picks up the new build whenever the
+          // server answers. What a reload alone can miss is a new service
+          // worker: ask the browser for it first and, if one is installing,
+          // reload only once it controls this page (it skips waiting and claims
+          // clients), so the reload runs under the new worker. Bounded, so a
+          // server that does not answer still ends in a reload.
           var reload = function () { window.location.reload(); };
-          try {
-            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-              var ch = new MessageChannel();
-              ch.port1.onmessage = reload;
-              navigator.serviceWorker.controller.postMessage({ type: 'PURGE_SHELL' }, [ch.port2]);
-              // Fallback if the SW never answers.
-              setTimeout(reload, 1500);
-              return Promise.resolve();
-            }
-          } catch (e) {}
-          reload();
-          return Promise.resolve();
+          var sw = navigator.serviceWorker;
+          if (!sw || !sw.getRegistration) {
+            reload();
+            return Promise.resolve();
+          }
+          var pickUpWorker = purgeShell(sw).then(function () {
+            return sw.getRegistration();
+          }).then(function (reg) {
+            if (!reg) return;
+            // Listen before asking, so a new worker that takes control while
+            // update() is still settling is not missed.
+            var controlled = new Promise(function (resolve) {
+              sw.addEventListener('controllerchange', resolve, { once: true });
+            });
+            return reg.update().then(function () {
+              if (!reg.installing && !reg.waiting) return;
+              return controlled;
+            });
+          });
+          var deadline = new Promise(function (resolve) { setTimeout(resolve, 10000); });
+          return Promise.race([pickUpWorker, deadline])
+            .catch(function () {})
+            .then(reload);
         },
       };
+
+      // Asks the worker in control to empty its shell cache, and resolves once
+      // it acknowledges (or after 1.5 s). A client still on the pre-Y
+      // cache-first worker reaches a new build only this way: Cloudflare kept
+      // serving that worker's own script, so update() found nothing new to
+      // install. The current worker only acknowledges, keeping its offline
+      // copy.
+      function purgeShell(sw) {
+        return new Promise(function (resolve) {
+          try {
+            if (!sw.controller) return resolve();
+            var channel = new MessageChannel();
+            channel.port1.onmessage = function () { resolve(); };
+            sw.controller.postMessage({ type: 'PURGE_SHELL' }, [channel.port2]);
+            setTimeout(resolve, 1500);
+          } catch (e) {
+            resolve();
+          }
+        });
+      }
 
       function notifyChange() {
         try { window.dispatchEvent(new Event('saamsaam-pwa-change')); } catch (e) {}
