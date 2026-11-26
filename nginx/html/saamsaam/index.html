@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Only styles the loading screen: the engine replaces every viewport meta
+       at start-up. interactive-widget is added after the first frame, in
+       lib/core/keyboard/web_keyboard_web.dart. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#1B6EF3">
   <title>SaamSaam</title>
@@ -15,7 +18,16 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
   <style>
-    body { margin: 0; overflow-y: scroll; user-select: none; -webkit-user-select: none; }
+    /* Flutter owns all scrolling; the document must never scroll (S12, the CSS
+       half of the keyboard fix). The engine pins <body> with inline styles,
+       including overflow: hidden, but hidden still allows programmatic
+       scrolling, so the browser may scroll the body to reveal the engine's
+       hidden text input when the keyboard opens. clip forbids that;
+       !important beats the engine's inline value. On <html> the value applies
+       to the viewport, where clip acts as hidden. Tested on Android Chrome
+       together with the viewport meta change (staging probe, 2026-11-24). */
+    html, body { height: 100%; margin: 0; overflow: clip !important; overscroll-behavior: none; }
+    body { user-select: none; -webkit-user-select: none; }
     #loading {
       display: flex; align-items: center; justify-content: center;
       height: 100vh; font-family: system-ui, sans-serif; color: #666;
@@ -81,23 +93,59 @@
           return Promise.resolve(false);
         },
         applyUpdate: function () {
-          // Purge the cached shell generation, then hard-reload so cache-first
-          // re-fetches the new build atomically.
+          // The service worker serves every stable-named shell file
+          // network-first, so a reload picks up the new build whenever the
+          // server answers. What a reload alone can miss is a new service
+          // worker: ask the browser for it first and, if one is installing,
+          // reload only once it controls this page (it skips waiting and claims
+          // clients), so the reload runs under the new worker. Bounded, so a
+          // server that does not answer still ends in a reload.
           var reload = function () { window.location.reload(); };
-          try {
-            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-              var ch = new MessageChannel();
-              ch.port1.onmessage = reload;
-              navigator.serviceWorker.controller.postMessage({ type: 'PURGE_SHELL' }, [ch.port2]);
-              // Fallback if the SW never answers.
-              setTimeout(reload, 1500);
-              return Promise.resolve();
-            }
-          } catch (e) {}
-          reload();
-          return Promise.resolve();
+          var sw = navigator.serviceWorker;
+          if (!sw || !sw.getRegistration) {
+            reload();
+            return Promise.resolve();
+          }
+          var pickUpWorker = purgeShell(sw).then(function () {
+            return sw.getRegistration();
+          }).then(function (reg) {
+            if (!reg) return;
+            // Listen before asking, so a new worker that takes control while
+            // update() is still settling is not missed.
+            var controlled = new Promise(function (resolve) {
+              sw.addEventListener('controllerchange', resolve, { once: true });
+            });
+            return reg.update().then(function () {
+              if (!reg.installing && !reg.waiting) return;
+              return controlled;
+            });
+          });
+          var deadline = new Promise(function (resolve) { setTimeout(resolve, 10000); });
+          return Promise.race([pickUpWorker, deadline])
+            .catch(function () {})
+            .then(reload);
         },
       };
+
+      // Asks the worker in control to empty its shell cache, and resolves once
+      // it acknowledges (or after 1.5 s). A client still on the pre-Y
+      // cache-first worker reaches a new build only this way: Cloudflare kept
+      // serving that worker's own script, so update() found nothing new to
+      // install. The current worker only acknowledges, keeping its offline
+      // copy.
+      function purgeShell(sw) {
+        return new Promise(function (resolve) {
+          try {
+            if (!sw.controller) return resolve();
+            var channel = new MessageChannel();
+            channel.port1.onmessage = function () { resolve(); };
+            sw.controller.postMessage({ type: 'PURGE_SHELL' }, [channel.port2]);
+            setTimeout(resolve, 1500);
+          } catch (e) {
+            resolve();
+          }
+        });
+      }
 
       function notifyChange() {
         try { window.dispatchEvent(new Event('saamsaam-pwa-change')); } catch (e) {}

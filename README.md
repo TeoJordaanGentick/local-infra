@@ -21,7 +21,7 @@ run its own PRIVATE stack alongside it instead of every app bringing up its own
 
 ## Services provided
 
-All five live in `compose.yml` and come up together. There is **no `public/`
+All six live in `compose.yml` and come up together. There is **no `public/`
 split** here: local-infra *is* the provider, so from its own standpoint every
 service is "always ours" and belongs in the single `compose.yml`. (A normal
 app-infra repo splits `compose.yml` from `public/compose.yml`; local-infra, like
@@ -32,15 +32,19 @@ app-infra repo splits `compose.yml` from `public/compose.yml`; local-infra, like
 |---|---|---|---|
 | `nginx` | `nginx:alpine` | — (serves browsers) | `80` — **all interfaces**, so `localhost` works |
 | `postgres` | `postgres:18.4-alpine` | `postgres:5432` | `127.0.0.1:5432` |
+| `mysql` | `mysql:8.4.13` | `mysql:3306` | `127.0.0.1:3306` |
 | `mqtt` (NanoMQ) | `emqx/nanomq:0.24.13-full` | `mqtt:1883` (tcp), `mqtt:8083` (ws) | `127.0.0.1:1883`, `127.0.0.1:8083` |
 | `questdb` | `questdb/questdb:9.4.0` | `questdb:9009` (ILP), `questdb:8812` (pgwire), `questdb:9000` (HTTP) | `127.0.0.1:9000` (console only) |
 | `redis` | `redis:8.8.0` | `redis:6379` | `127.0.0.1:6379` |
 
-**Why these five.** `talosot` needs `nginx`, `mqtt`, `postgres`, `questdb`;
-`rms` needs `nginx`, `postgres`. `redis` is included for parity with
+**Why these six.** `talosot` needs `nginx`, `mqtt`, `postgres`, `questdb`;
+`rms` needs `nginx`, `postgres`; `gen1` (LoRadian) needs `mysql`, `questdb`,
+`mqtt`, `nginx` — its Redis stays in gen1-infra's private stack, because it holds
+gen1's own queue and cache. `redis` is included for parity with
 `gentick-infra` and near-term use — **no local app consumes it today**; drop its
 block from `compose.yml` for an even leaner box. `safaura` has no infra yet and
-adds nothing. `mariadb`, `cloudflared`, `leantime`, `vaultwarden`, `mailpit`,
+adds nothing. MySQL rather than gentick-infra's `mariadb`, because gen1 runs on
+MySQL. `cloudflared`, `leantime`, `vaultwarden`, `mailpit`,
 `n8n` from `gentick-infra` are server- or app-specific and are intentionally
 absent — add one only when a local app truly needs it.
 
@@ -69,7 +73,15 @@ Docker runs inside WSL on this box, so run it there:
 `wsl -e bash -lc 'cd /srv/local-infra && ./svc-build-env.sh && ./svc-gen-nanomq.sh && docker compose up -d'`.
 
 Check it: `curl -s http://localhost/healthz` → `ok`, and
-`docker ps` shows `nginx postgres mqtt questdb redis` healthy.
+`docker ps` shows `nginx postgres mysql mqtt questdb redis` healthy.
+
+**Changing `nginx/nginx.conf` on a running box needs `docker compose restart
+nginx`.** The file is bind-mounted on its own, and a single-file bind mount is
+pinned to the inode: `git pull` writes a new file, so the running container keeps
+reading the old one, `nginx -s reload` included. `docker compose up -d` does not
+help either — the compose config did not change, so nginx is not recreated. The
+restart drops every vhost on this box (and the tunnel hostnames) for a second or
+two; tell whoever else is testing here.
 
 > Like `gentick-infra`, this repo carries only `svc-build-env.sh` and
 > `svc-gen-nanomq.sh` — no `svc-start.sh` or scope machinery. It is a pure
@@ -89,6 +101,23 @@ edit** — the per-app names use the `.localhost` TLD, which browsers send to
 | `http://localhost/` | talosot Flutter SPA (`nginx/html/talosot`) | `talosot-api:8080` | `/mqtt` WS → `mqtt:8083`; `/emu/` → `nginx/html/talosot-emulator` |
 | `http://talosot.localhost/` | same as above | `talosot-api:8080` | same |
 | `http://rms.localhost/` | rms React SPA (`nginx/html/rms`) | `rms-api:8080` | — |
+| `http://saamsaam.localhost/`, `https://sm.teojordaan.com/` | saamsaam Flutter SPA (`nginx/html/saamsaam`) | `saamsaam-api:8080` (prefix stripped) | — |
+| `http://gen1.localhost/`, `https://gen-1.teojordaan.com/` | gen1 **staging** console container (`gen1-web-staging:8080`), everything proxied | — (the console calls `gen1api.` directly) | no bundle in `nginx/html/` |
+| `http://gen1api.localhost/`, `https://gen1api.teojordaan.com/` | — (API only) | `gen1-api-staging:80` (everything, path kept) | `/query/` → `go-data:80` |
+| `http://mqtt.localhost`, `wss://mqtt.teojordaan.com` (bare), and `/mqtt` on either | — (only `/` and `/mqtt`; anything else 404) | — | both WS → `mqtt:8083/mqtt` |
+
+The `*.teojordaan.com` names arrive through **this laptop's Cloudflare tunnel**
+(Teo's personal account, dashboard-managed ingress → `http://nginx:80`).
+Cloudflare terminates TLS, so nginx listens plain HTTP for them like every other
+vhost; `server_name` is what routes them. The tunnel's connector currently runs
+from `saamsaam-infra` (`saamsaam-cloudflared`), so these hostnames are up only
+while that stack runs.
+
+The gen1 vhosts point at gen1-infra's **staging** slot containers (`gen1-web-staging`,
+`gen1-api-staging`, and `go-data` for `/query/`), resolved per request, so nginx
+starts with gen1 down and those vhosts answer 502 until it is up. The web bundle
+is not in `nginx/html/`: the console container serves it. The `gen1-` prefix is
+gen1-infra's `PROJECT_NAME`.
 
 The web bundles are **bind-mounted** from `nginx/html/<app>/`; nginx serves them
 straight from the working tree. On a fresh clone each holds only a placeholder
@@ -181,8 +210,10 @@ new app `foo`:
 3. **bundle** — create `nginx/html/foo/` and put the app's web build there.
 4. **credentials** — if `foo` needs a service local-infra doesn't provide yet, add
    it to `compose.yml` and reuse the shared `.env` key names (or add new keys to
-   the pragma). For a broker account, add the username to `nanomq/nanomq_acl.conf`
-   and a matching `MQTT_*` pair.
+   the pragma). For a broker account, add its rules to
+   `nanomq/nanomq_acl.conf.example` with a `@FOO_MQTT_<ROLE>_USER@` token, and the
+   matching `FOO_MQTT_<ROLE>_USER` / `_PASSWORD` pair to `.env.example`;
+   `svc-gen-nanomq.sh` turns every token into an account (see "gen1 LoRadian").
 5. Start `foo`'s private stack: `cd foo-infra && ./svc-start.sh --scope private`.
 
 **rms** today needs only `nginx` + `postgres`, both already provided — so rms
@@ -197,12 +228,63 @@ no backing-service dependencies yet, so there is nothing to wire until
 
 ---
 
+## gen1 LoRadian (stage 1 of loradian-firmware's server plan)
+
+What local-infra provides for gen1 and its LoRadian devices
+(`loradian-firmware/_docs/plan/server/deploy.md`):
+
+- **`mysql`** with the databases and accounts gen1 expects (first boot):
+  `production` and `staging` (account `MYSQL_USER`), `rain`, `water`, `level`
+  (one account each), and the query API's read-only account. Created by the
+  image plus `mysql/initdb.d/10-gen1.sh`, a copy of gen1-infra's script.
+- **Three broker accounts** in the ACL, after TalosOT's roles and before the
+  catch-all deny. Device topics are `TEL/LR/<app>/<deviceId>/<firmVer>/<topic>`.
+
+  | Account (pragma keys) | Publish | Subscribe |
+  |---|---|---|
+  | device — `GEN1_MQTT_LORADIAN_DEVICE_*` | `TEL/LR/+/+/+/` `data`, `status`, `settingsEcho`, `heart`, `error`, `diagnostics` | `TEL/LR/+/+/+/` `pgCfrm`, `settings`, `cmd`; `TEL/LR/timestamp` |
+  | nexus — `GEN1_MQTT_NEXUS_*` (every gen1 nexus) | `TEL/#`, `server/#`, `timestamp` | `TEL/#`, `server/#`, `timestamp` |
+  | console — `GEN1_MQTT_CONSOLE_*` | nothing (explicit deny) | `TEL/LR/+/+/+/` `data`, `status`, `heart`, `error`, `diagnostics`, `settingsEcho`; `TEL/LR/timestamp`. Not `settings` (carries the WiFi PSK and broker password to devices), `cmd` or `pgCfrm` |
+
+  The device rules split by direction, so a device password cannot publish
+  settings or commands to another device. A device must subscribe to named topics
+  (`+` levels are fine); a device filter `TEL/LR/#` or `…/#` is denied.
+- **Three vhosts**, `gen-1.teojordaan.com`, `gen1api.teojordaan.com` and `mqtt.teojordaan.com` (see
+  "Domains and routes").
+
+New pragma keys: `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, `MYSQL_PASSWORD`,
+`MYSQL_USER_2`, `MYSQL_PASSWORD_2`, `MYSQL_USER_3`, `MYSQL_PASSWORD_3`,
+`MYSQL_USER_4`, `MYSQL_PASSWORD_4`, `MYSQL_USER_QUERY_API`,
+`MYSQL_PASSWORD_QUERY_API`,
+`GEN1_MQTT_LORADIAN_DEVICE_*, GEN1_MQTT_NEXUS_* and GEN1_MQTT_CONSOLE_*`. Every broker username
+must differ from the others; `svc-gen-nanomq.sh` refuses a duplicate.
+
+Bringing it onto a box already running local-infra, in WSL:
+
+```bash
+cd /srv/local-infra
+git pull
+./svc-build-env.sh --init-pragma   # appends a replace-me stub per new key to /srv/data/pragma
+#   -> fill the new keys in /srv/data/pragma (Teo)
+./svc-build-env.sh                 # rebuilds .env; refuses while a stub remains
+./svc-gen-nanomq.sh                # re-renders nanomq_pwd.conf + nanomq_acl.conf
+docker compose up -d               # creates mysql; every other service is unchanged and keeps running
+docker compose restart mqtt        # the broker reads its pwd/ACL files only at start
+docker compose restart nginx       # picks up the new vhosts (bind-mount inode, see Quick start)
+```
+
+The two restarts each drop that service for a few seconds for every app on the
+box. Outside this box, `gen-1.teojordaan.com`, `gen1api.teojordaan.com` and `mqtt.teojordaan.com` also
+need public hostnames on the tunnel (Cloudflare dashboard, → `http://nginx:80`).
+
+---
+
 ## Where data lives
 
 - **Host level.** Everything persistent is under `${HOST_DATA_ROOT}` (default
   `/srv/data`), set per-machine in `.env` — it is the one value that genuinely
   varies per host:
-  `postgres/data/`, `questdb/`, `redis/`, `mqtt-broker/` (postgres nests its
+  `postgres/data/`, `mysql/`, `questdb/`, `redis/`, `mqtt-broker/` (postgres nests its
   cluster under `postgres/data/` so the `postgres/` parent stays free for
   backups/dumps without fouling the strict-perms data dir). This is **outside the repo
   on purpose** — a data directory under a git working tree is one `git clean`
@@ -213,6 +295,15 @@ no backing-service dependencies yet, so there is nothing to wire until
   inside the cluster (`talosot`, `gentick_rms`, …); those are created by the app
   (or by hand) — not re-initialised here. On an already-initialised data root the
   `POSTGRES_*`/`QUESTDB_*` init values are ignored.
+- **MySQL: created once, on an empty data dir.** The image creates
+  `MYSQL_DATABASE` (`production`) and grants `MYSQL_USER` ALL on it;
+  `mysql/initdb.d/10-gen1.sh` then creates `staging`, `rain`, `water`, `level`
+  and their accounts. Never again once `mysql/` exists: a later pragma change, or
+  another database or account, is a one-off by hand:
+  `docker exec -it mysql mysql -uroot -p` with `MYSQL_ROOT_PASSWORD`, then
+  `CREATE DATABASE …; GRANT ALL ON ….* TO '<MYSQL_USER>'@'%';`. The script is a
+  copy of gen1-infra's `public/mysql/initdb.d/10-gen1.sh`; re-copy it when that
+  one changes.
 - **Nothing secret is committed.** `.env`, `nanomq/nanomq_pwd.conf` and
   `nanomq/nanomq_acl.conf` are gitignored (all generated at bring-up from `.env`);
   only `.env.example`, `nanomq_pwd.conf.example` and `nanomq_acl.conf.example` are
@@ -232,6 +323,12 @@ shared pragma file and refuses to write a `.env` that still holds a placeholder.
 across every stack on the box, so one entry serves all of them — inventing a
 parallel name (`PG_USER` vs `POSTGRES_USER`) is how two keys end up holding what
 should be one value, and they drift.
+
+A value **one app owns** carries that app's prefix instead, so the bare name never
+claims it is shared: the gen1 broker accounts are
+`GEN1_MQTT_LORADIAN_DEVICE_*`, `GEN1_MQTT_NEXUS_*` and `GEN1_MQTT_CONSOLE_*` (only the device account names a device family: it is the one whose credentials leave the server, so its topic rights are LoRadian's alone). `MYSQL_USER` / `MYSQL_PASSWORD` stay bare because they
+are gen1-infra's spelling of the account it dials with — one pragma entry for both
+repos.
 
 Two silent foot-guns: a literal `$` in a secret must be **doubled** (`pa$$word`),
 and never set `COMPOSE_PROJECT_NAME` (it outranks `name:` and renames every
@@ -278,7 +375,7 @@ would name the whole stack and `--scope public` would name nothing. This mirrors
 
 ```
 local-infra/
-  compose.yml                 the five shared services
+  compose.yml                 the six shared services
   .env.example                committed template (replace- = secret); .env gitignored
   .gitignore  .gitattributes
   svc-build-env.sh            build .env from .env.example + pragma creds

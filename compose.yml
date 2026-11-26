@@ -1,8 +1,8 @@
 # local-infra — SHARED PUBLIC INFRASTRUCTURE for this local dev box.
 #
 # The leaner, LOCAL equivalent of gentick-infra: it provides the backing services
-# (nginx, postgres, mqtt, questdb, redis) that every app stack on this box reaches
-# BY NAME over one shared docker network, so they can each run their own PRIVATE
+# (nginx, postgres, mysql, mqtt, questdb, redis) that every app stack on this box
+# reaches BY NAME over one shared docker network, so they can each run their own PRIVATE
 # stack alongside it instead of every app bringing up its own postgres/nginx and
 # colliding on ports 5432/80.
 #
@@ -146,6 +146,65 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    logging:
+      driver: "local"
+      options:
+        max-size: "1m"
+        max-file: "3"
+
+  # ************************** MySQL (gen1) **************************
+  # gen1 (api, query-api, loradian-nexus) dials `mysql:3306`: gen1-infra's
+  # MYSQL_HOST is a contract name every host's MySQL must answer to.
+  #
+  # 8.4 is the LTS line. It no longer loads mysql_native_password by default,
+  # so clients must speak caching_sha2_password (Laravel's PDO and
+  # go-sql-driver both do).
+  #
+  # First boot only (an empty data dir): the image creates MYSQL_DATABASE
+  # (production) and grants MYSQL_USER ALL on it, then runs
+  # mysql/initdb.d/10-gen1.sh for the rest of what gen1 expects (staging, rain,
+  # water, level, their accounts, the query API's read-only account). Changing
+  # the pragma later changes nothing here — see README → "Where data lives".
+  mysql:
+    image: mysql:8.4.13
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER must be set}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}
+      # Read only by initdb.d/10-gen1.sh, on first boot.
+      MYSQL_DATABASE_STAGING: ${MYSQL_DATABASE_STAGING}
+      MYSQL_DATABASE_2: ${MYSQL_DATABASE_2}
+      MYSQL_USER_2: ${MYSQL_USER_2:?MYSQL_USER_2 must be set}
+      MYSQL_PASSWORD_2: ${MYSQL_PASSWORD_2:?MYSQL_PASSWORD_2 must be set}
+      MYSQL_DATABASE_3: ${MYSQL_DATABASE_3}
+      MYSQL_USER_3: ${MYSQL_USER_3:?MYSQL_USER_3 must be set}
+      MYSQL_PASSWORD_3: ${MYSQL_PASSWORD_3:?MYSQL_PASSWORD_3 must be set}
+      MYSQL_DATABASE_4: ${MYSQL_DATABASE_4}
+      MYSQL_USER_4: ${MYSQL_USER_4:?MYSQL_USER_4 must be set}
+      MYSQL_PASSWORD_4: ${MYSQL_PASSWORD_4:?MYSQL_PASSWORD_4 must be set}
+      MYSQL_USER_QUERY_API: ${MYSQL_USER_QUERY_API:?MYSQL_USER_QUERY_API must be set}
+      MYSQL_PASSWORD_QUERY_API: ${MYSQL_PASSWORD_QUERY_API:?MYSQL_PASSWORD_QUERY_API must be set}
+      TZ: ${TZ}
+    networks:
+      - backend-net
+    ports:
+      - "127.0.0.1:3306:3306" # Loopback only, like postgres: host clients, never the LAN
+    volumes:
+      - ${HOST_DATA_ROOT}/mysql:/var/lib/mysql
+      - ./mysql/initdb.d:/docker-entrypoint-initdb.d:ro
+    # mysqladmin ping exits 0 whenever the server answers, even "Access denied",
+    # so it needs no credential. TCP to 127.0.0.1 (not the socket) on purpose:
+    # first-boot init runs a temporary server with networking off, so this stays
+    # unhealthy until init has finished and the real server is listening.
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     logging:
       driver: "local"
       options:
