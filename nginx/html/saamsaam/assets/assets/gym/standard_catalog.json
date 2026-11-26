@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "exercises": [
     {
       "id": 1,
@@ -770,6 +770,16 @@
       "uses_weight": true,
       "uses_distance": true,
       "uses_time": false
+    },
+    {
+      "id": 78,
+      "type": "cycle",
+      "name": "Assault Bike",
+      "normalized_name": "assaultbike",
+      "uses_reps": false,
+      "uses_weight": false,
+      "uses_distance": true,
+      "uses_time": true
     }
   ]
 }

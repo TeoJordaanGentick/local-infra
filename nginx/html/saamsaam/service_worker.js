@@ -11,9 +11,10 @@
 //  - /api/* and /sync/* are never touched. A cache-busting query on
 //    version.json (the update probe) goes straight to the network.
 //  - Content-hashed files (main.<hash>.dart.js, <name>.<hash>.otf, see
-//    HASHED_NAME) are immutable: cache-first.
+//    HASHED_NAME, and everything under canvaskit/<hash>/, see HASHED_DIR) are
+//    immutable: cache-first.
 //  - Every other shell file (navigations / index.html, flutter_bootstrap.js,
-//    flutter.js, version.json, assets/*Manifest*, canvaskit/*, ...) is
+//    flutter.js, version.json, assets/*Manifest*, an unhashed canvaskit/*, ...) is
 //    NETWORK-FIRST. It keeps its name across builds, so serving it from the
 //    cache without asking the server is how an old build stays pinned. The
 //    request revalidates past the HTTP cache (cache: 'no-cache'): Cloudflare
@@ -40,9 +41,30 @@
 //    wrong-type 200 does not count: it arrives at once, so the breaker would
 //    save no waiting, and on production nginx it is how a healthy server
 //    answers a missing file.
-//  - flutter_bootstrap.js names the build's main.<hash>.dart.js. A new
-//    bootstrap is served and cached only once that entrypoint is cached too, so
+//  - flutter_bootstrap.js names the build's main.<hash>.dart.js and its
+//    canvaskit/<hash>/ directory. A new bootstrap is served and cached only
+//    once that entrypoint and the build's CanvasKit files are cached too, so
 //    the cache never holds a bootstrap whose build it cannot boot offline.
+//    Which CanvasKit files a build needs depends on the browser (canvaskit/ or
+//    chromium/, decided in the page with APIs a service worker does not have),
+//    so the worker pairs a new build with the files this device has loaded
+//    before, under any canvaskit/ directory. A new canvaskit/<hash>/ is
+//    ~6-7 MB, so it only appears on a Flutter upgrade.
+//  - A paired CanvasKit file the new directory does not have (a 404, or
+//    production nginx's 200 index.html) is skipped: a Flutter upgrade may drop
+//    or rename it, and waiting for it would pin the device to its old build for
+//    good. When none of them is there and neither is canvaskit.js, which Flutter
+//    always ships, the directory itself is missing (a broken deploy): the new
+//    bootstrap is not served, so the cached build and its renderer keep
+//    booting. A server that says it has no such file is up, so neither case
+//    trips the breaker.
+//  - On the first visit the page loads CanvasKit before this worker controls
+//    it, so there is nothing to pair yet. The worker copies the CanvasKit files
+//    the page loaded from the HTTP cache instead (no download); a file still
+//    downloading then is cached as the page loads it on the next boot.
+//  - Once the page has the new bootstrap, the entrypoints and CanvasKit files
+//    of earlier builds are dropped (every canvaskit/<hash>/ when the new build
+//    has no hashed directory).
 
 // Bumped when the cache layout changes; activate drops every other generation
 // (the pre-Y worker also cached './' under -v1).
@@ -53,9 +75,10 @@ const CACHE = 'saamsaam-shell-v2';
 // link to answer a 304.
 const NETWORK_TIMEOUT_MS = 4000;
 
-// How long a new flutter_bootstrap.js waits for its main.<hash>.dart.js to
-// download before the cached build boots instead. The download goes on.
-const ENTRYPOINT_TIMEOUT_MS = 30000;
+// How long a new flutter_bootstrap.js waits for its main.<hash>.dart.js (and
+// CanvasKit files) to download before the cached build boots instead. The
+// download goes on.
+const BUILD_TIMEOUT_MS = 30000;
 
 // How long a server failure marks the server as down.
 const SERVER_DOWN_MS = 30000;
@@ -85,8 +108,27 @@ const REQUIRED = ['index.html', 'flutter_bootstrap.js'];
 // agollum patch-cache-bust.sh names a content-hashed file <name>.<8 hex>.<ext>
 // (main.<hash>.dart.js, MaterialIcons-Regular.<hash>.otf).
 const HASHED_NAME = /\.[0-9a-f]{8}\./i;
+// It moves a locally served CanvasKit into canvaskit/<8 hex>/ (the loader
+// hardcodes the file names) and names that directory in flutter_bootstrap.js.
+const HASHED_DIR = /\/canvaskit\/[0-9a-f]{8}\//i;
 const ENTRYPOINT_NAME = /^main\.[0-9a-f]{8}\.dart\.js$/i;
 const MAIN_JS_PATH = /"mainJsPath"\s*:\s*"([^"]+)"/;
+// Only a value naming a hashed directory: the inlined loader mentions
+// canvasKitBaseUrl too.
+const CANVASKIT_BASE_URL = /canvasKitBaseUrl\s*:\s*"((?:[^"]*\/)?canvaskit\/[0-9a-f]{8}\/?)"/i;
+// A cached CanvasKit file, relative to its directory: canvaskit/<hash>/<file>
+// or, from an unhashed build, canvaskit/<file>.
+const CANVASKIT_FILE = /^canvaskit\/(?:[0-9a-f]{8}\/)?(.+)$/i;
+// In every CanvasKit directory Flutter emits: its answer tells a directory
+// that lacks some files from one that is missing.
+const CANVASKIT_ALWAYS = 'canvaskit.js';
+// The files a canvaskit-renderer build loads, in one of two variants.
+const CANVASKIT_VARIANTS = ['canvaskit.js', 'canvaskit.wasm', 'chromium/canvaskit.js', 'chromium/canvaskit.wasm'];
+
+// What fetching a build file found.
+const PRESENT = 'present'; // cached
+const ABSENT = 'absent'; // the server answered that it has no such file
+const FAILED = 'failed'; // no usable answer, or the cache write failed
 
 const TIMED_OUT = Symbol('timed out');
 
@@ -109,7 +151,13 @@ function fileName(url) {
 }
 
 function isHashed(url) {
-  return HASHED_NAME.test(fileName(url));
+  return HASHED_NAME.test(fileName(url)) || HASHED_DIR.test(url.pathname);
+}
+
+// The path of url relative to the scope, or null outside it.
+function scopePath(url) {
+  const scope = scopeUrl('').href;
+  return url.href.startsWith(scope) ? url.href.slice(scope.length) : null;
 }
 
 function isBootstrap(url) {
@@ -150,6 +198,19 @@ function isServerFailure(res) {
   return !res || res.status >= 500;
 }
 
+// Whether an unusable answer says the server has no such file: a 404, or a 2xx
+// of the wrong type (production nginx answers a missing file with index.html).
+function isMissing(res) {
+  return !!res && (res.status === 404 || res.ok);
+}
+
+// An answer for a build file as PRESENT (usable, not yet cached), ABSENT or
+// FAILED.
+function classify(res, url) {
+  if (isUsable(res, url, false)) return PRESENT;
+  return isMissing(res) ? ABSENT : FAILED;
+}
+
 // fetch() that resolves to null on a network error instead of rejecting.
 function fetchOrNull(request) {
   return fetch(request).catch(() => null);
@@ -181,34 +242,114 @@ function entrypointOf(bootstrapBody) {
   return match ? scopeUrl(match[1]) : null;
 }
 
-// Ensures the entrypoint is cached, downloading it if not. Resolves to whether
-// it is. No deadline of its own: callers bound how long they wait for it.
-async function cacheEntrypoint(cache, mainUrl) {
-  if (await cache.match(mainUrl)) return true;
-  const res = await fetchOrNull(new Request(mainUrl));
-  return isUsable(res, mainUrl, false) && (await put(cache, mainUrl, res));
+// The build's canvaskit/<hash>/ directory, or null when CanvasKit is not
+// hashed (an unhashed or a CDN build).
+function canvasKitDirOf(bootstrapBody) {
+  const match = CANVASKIT_BASE_URL.exec(bootstrapBody);
+  return match ? scopeUrl(match[1].endsWith('/') ? match[1] : `${match[1]}/`) : null;
+}
+
+// The CanvasKit files this device has loaded, relative to their directory
+// (canvaskit.wasm, chromium/canvaskit.wasm, ...), whichever build they are from.
+async function canvasKitFilesInUse(cache) {
+  const files = new Set();
+  for (const req of await cache.keys()) {
+    const match = CANVASKIT_FILE.exec(scopePath(new URL(req.url)) ?? '');
+    if (match) files.add(match[1]);
+  }
+  return [...files];
+}
+
+// Ensures a build file is cached, downloading it if not. Resolves to PRESENT
+// (cached), ABSENT or FAILED. No deadline of its own: callers bound how long
+// they wait for it.
+async function cacheFile(cache, url) {
+  if (await cache.match(url)) return PRESENT;
+  const res = await fetchOrNull(new Request(url));
+  const found = classify(res, url);
+  if (found !== PRESENT) return found;
+  return (await put(cache, url, res)) ? PRESENT : FAILED;
+}
+
+// A request answered only from the HTTP cache, or null when the browser does
+// not support that (it would download the file instead).
+function cachedOnlyRequest(url) {
+  try {
+    const req = new Request(url, { cache: 'only-if-cached', mode: 'same-origin' });
+    return req.cache === 'only-if-cached' ? req : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// Caches the CanvasKit files the page loaded from dir before this worker
+// controlled it: those, and only those, are in the HTTP cache, so this picks
+// the variant this browser uses without downloading anything.
+async function cacheLoadedCanvasKit(cache, dir) {
+  await Promise.all(CANVASKIT_VARIANTS.map(async (file) => {
+    const url = new URL(file, dir);
+    const req = cachedOnlyRequest(url);
+    const res = req && (await fetchOrNull(req));
+    if (isUsable(res, url, false)) await put(cache, url, res);
+  }));
+}
+
+// Ensures this device's CanvasKit files are cached under a build's
+// canvaskit/<hash>/ directory (see the header). Resolves to PRESENT when the
+// build may be served, ABSENT when the directory is missing, FAILED when the
+// server did not answer.
+async function cacheCanvasKit(cache, dir) {
+  const files = await canvasKitFilesInUse(cache);
+  if (!files.length) {
+    await cacheLoadedCanvasKit(cache, dir);
+    return PRESENT;
+  }
+  const found = await Promise.all(files.map((file) => cacheFile(cache, new URL(file, dir))));
+  if (found.includes(FAILED)) return FAILED;
+  if (found.includes(PRESENT)) return PRESENT;
+  const always = new URL(CANVASKIT_ALWAYS, dir);
+  return classify(await fetchOrNull(new Request(always, { method: 'HEAD' })), always);
+}
+
+// Ensures the files a bootstrap's build boots from are cached: its entrypoint
+// and, when CanvasKit is hashed, this device's CanvasKit files under the new
+// directory. Resolves to PRESENT when the build can boot from the cache,
+// ABSENT when the server lacks a file it needs, FAILED otherwise.
+async function cacheBuild(cache, bootstrapBody) {
+  const mainUrl = entrypointOf(bootstrapBody);
+  const canvasKitDir = canvasKitDirOf(bootstrapBody);
+  const found = await Promise.all([
+    // No mainJsPath (an unpatched or wasm build): no entrypoint to pair with.
+    mainUrl ? cacheFile(cache, mainUrl) : PRESENT,
+    canvasKitDir ? cacheCanvasKit(cache, canvasKitDir) : PRESENT,
+  ]);
+  if (found.includes(FAILED)) return FAILED;
+  return found.includes(ABSENT) ? ABSENT : PRESENT;
 }
 
 // Caches a fetched flutter_bootstrap.js (body already read) only together with
-// the entrypoint it names. Resolves to whether that entrypoint is cached, that
-// is whether the bootstrap may be served; caches nothing when it is not.
+// the build it names. Resolves to cacheBuild's verdict: the bootstrap may be
+// served only on PRESENT, and is cached only then.
 async function commitBootstrap(cache, key, res, body) {
-  const mainUrl = entrypointOf(body);
-  // No mainJsPath (an unpatched or wasm build): nothing to pair it with.
-  if (mainUrl && !(await cacheEntrypoint(cache, mainUrl))) return false;
-  await put(cache, key, new Response(body, { status: res.status, headers: res.headers }));
-  return true;
+  const found = await cacheBuild(cache, body);
+  if (found === PRESENT) await put(cache, key, new Response(body, { status: res.status, headers: res.headers }));
+  return found;
 }
 
-// Drops the entrypoints of earlier builds. Only once the page has been handed
-// the bootstrap naming mainUrl: a page booting the cached build still needs
-// its entrypoint.
-async function pruneEntrypoints(cache, mainUrl) {
+// Drops the entrypoints and CanvasKit files of earlier builds. Only once the
+// page has been handed the bootstrap naming this build: a page booting the
+// cached build still needs its files.
+async function pruneOldBuilds(cache, bootstrapBody) {
+  const mainUrl = entrypointOf(bootstrapBody);
+  const canvasKitDir = canvasKitDirOf(bootstrapBody);
   for (const old of await cache.keys()) {
     const url = new URL(old.url);
-    if (ENTRYPOINT_NAME.test(fileName(url)) && url.href !== mainUrl.href) {
-      await cache.delete(old);
-    }
+    const oldEntrypoint = mainUrl && ENTRYPOINT_NAME.test(fileName(url)) && url.href !== mainUrl.href;
+    // A build without a hashed directory needs none of the hashed ones.
+    const oldCanvasKit = canvasKitDir
+      ? CANVASKIT_FILE.test(scopePath(url) ?? '') && !url.href.startsWith(canvasKitDir.href)
+      : HASHED_DIR.test(url.pathname);
+    if (oldEntrypoint || oldCanvasKit) await cache.delete(old);
   }
 }
 
@@ -257,7 +398,7 @@ async function serveBootstrap(event, cache, key, res, cached) {
     return cached || res;
   }
   const committing = commitBootstrap(cache, key, res, body);
-  const committed = await waitFor(committing, ENTRYPOINT_TIMEOUT_MS, cached);
+  const committed = await waitFor(committing, BUILD_TIMEOUT_MS, cached);
   if (committed === TIMED_OUT) {
     // A slow link: boot the cached build, and let the download finish so the
     // next boot gets the new one.
@@ -265,13 +406,13 @@ async function serveBootstrap(event, cache, key, res, cached) {
     event.waitUntil(committing);
     return cached;
   }
-  if (!committed) {
-    // The entrypoint did not download: boot the cached build.
-    markServerDown();
+  if (committed !== PRESENT) {
+    // The build did not download, or the server lacks part of it: boot the
+    // cached one. Only a failure marks the server down.
+    if (committed === FAILED) markServerDown();
     return cached || res;
   }
-  const mainUrl = entrypointOf(body);
-  if (mainUrl) event.waitUntil(pruneEntrypoints(cache, mainUrl));
+  event.waitUntil(pruneOldBuilds(cache, body));
   return res;
 }
 
@@ -323,7 +464,7 @@ async function precache(cache, path) {
   const url = scopeUrl(path);
   const res = await fetchOrNull(new Request(url, { cache: 'reload' }));
   if (!isUsable(res, url, false)) return false;
-  if (isBootstrap(url)) return commitBootstrap(cache, url, res, await res.text());
+  if (isBootstrap(url)) return (await commitBootstrap(cache, url, res, await res.text())) === PRESENT;
   return put(cache, url, res);
 }
 
