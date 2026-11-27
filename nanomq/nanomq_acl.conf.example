@@ -77,7 +77,7 @@ rules = [
 	{"permit": "allow", "username": "@GEN1_MQTT_LORADIAN_DEVICE_USER@", "action": "publish", "topics": [
 		"TEL/LR/+/+/+/data", "TEL/LR/+/+/+/status", "TEL/LR/+/+/+/settingsEcho",
 		"TEL/LR/+/+/+/heart", "TEL/LR/+/+/+/error", "TEL/LR/+/+/+/diagnostics",
-		"TEL/LR/+/+/+/otaReq", "TEL/LR/+/+/+/otaState"
+		"TEL/LR/+/+/+/otaReq", "TEL/LR/+/+/+/otaState", "TEL/LR/+/+/+/cmdEcho"
 	]}
 	# ── device: downlinks addressed to it or its nodes, and the server clock.
 	{"permit": "allow", "username": "@GEN1_MQTT_LORADIAN_DEVICE_USER@", "action": "subscribe", "topics": [
